@@ -1,6 +1,7 @@
 find_package(CUDA REQUIRED)
 if (${CUDA_FOUND})
 message("find cuda package")
+include_directories("/usr/local/cuda-11.0/targets/x86_64-linux/include")
 set(CUDALIBDIR "/usr/local/cuda-11.0/lib64")
 cuda_add_executable(vectorAdd vectorAdd.cu)
 target_link_libraries(vectorAdd allocator unify_pointer)
