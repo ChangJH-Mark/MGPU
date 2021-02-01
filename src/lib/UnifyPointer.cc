@@ -10,6 +10,21 @@ UnifyPointer::UnifyPointer(char *gpuaddr, char *cpuaddr, size_t size, MemType ty
     this->mem_type = type;
 }
 
+// Return统一内存的host端地址
+char* UnifyPointer::hostAddr() {
+    return cpu_address;
+}
+
+// Return统一内存的device端地址
+char* UnifyPointer::deviceAddr() {
+    return gpu_address;
+}
+
+// Return内存大小
+size_t UnifyPointer::len() {
+    return size;
+}
+
 err_t UnifyPointer::free()
 {
     switch (mem_type)

@@ -73,8 +73,8 @@
      // Initialize the host input vectors
      for (int i = 0; i < numElements; ++i)
      {
-         h_A.cpu_address[i] = rand()/(float)RAND_MAX;
-         h_B.cpu_address[i] = rand()/(float)RAND_MAX;
+         h_A.hostAddr()[i] = rand()/(float)RAND_MAX;
+         h_B.hostAddr()[i] = rand()/(float)RAND_MAX;
      }
  
      // Allocate the device input vector A
@@ -107,7 +107,7 @@
      // Copy the host input vectors A and B in host memory to the device input vectors in
      // device memory
      printf("Copy input data from the host memory to the CUDA device\n");
-     auto err = cudaMemcpy(d_A.gpu_address, h_A.cpu_address, size, cudaMemcpyHostToDevice);
+     auto err = cudaMemcpy(d_A.deviceAddr(), h_A.hostAddr(), size, cudaMemcpyHostToDevice);
  
      if (err != cudaSuccess)
      {
@@ -115,7 +115,7 @@
          exit(EXIT_FAILURE);
      }
  
-     err = cudaMemcpy(d_B.gpu_address, h_B.cpu_address, size, cudaMemcpyHostToDevice);
+     err = cudaMemcpy(d_B.deviceAddr(), h_B.hostAddr(), size, cudaMemcpyHostToDevice);
  
      if (err != cudaSuccess)
      {
@@ -127,7 +127,7 @@
      int threadsPerBlock = 256;
      int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
      printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-     vectorAdd<<<blocksPerGrid, threadsPerBlock>>>((float*)d_A.gpu_address, (float*)d_B.gpu_address, (float *)d_C.gpu_address, numElements);
+     vectorAdd<<<blocksPerGrid, threadsPerBlock>>>((float*)d_A.deviceAddr(), (float*)d_B.deviceAddr(), (float *)d_C.deviceAddr(), numElements);
      err = cudaGetLastError();
  
      if (err != cudaSuccess)
@@ -139,7 +139,7 @@
      // Copy the device result vector in device memory to the host result vector
      // in host memory.
      printf("Copy output data from the CUDA device to the host memory\n");
-     err = cudaMemcpy(h_C.cpu_address, d_C.gpu_address, size, cudaMemcpyDeviceToHost);
+     err = cudaMemcpy(h_C.hostAddr(), d_C.deviceAddr(), size, cudaMemcpyDeviceToHost);
  
      if (err != cudaSuccess)
      {
@@ -150,7 +150,7 @@
      // Verify that the result vector is correct
      for (int i = 0; i < numElements; ++i)
      {
-         if (fabs(h_A.cpu_address[i] + h_B.cpu_address[i] - h_C.cpu_address[i]) > 1e-5)
+         if (fabs(h_A.hostAddr()[i] + h_B.hostAddr()[i] - h_C.hostAddr()[i]) > 1e-5)
          {
              fprintf(stderr, "Result verification failed at element %d!\n", i);
              exit(EXIT_FAILURE);

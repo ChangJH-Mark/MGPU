@@ -15,17 +15,21 @@ enum MemType
 };
 #endif
 
+
+// 将cpu端内存、gpu端内存、统一管理起来
 class UnifyPointer
 {
-public:
+private:
     char *cpu_address;
     char *gpu_address;
     size_t size;
     MemType mem_type;
-
 public:
     UnifyPointer(){};
     UnifyPointer(char *gpuaddr, char *cpuaddr, size_t size, MemType type);
+    char* hostAddr();
+    char* deviceAddr();
+    size_t len();
     err_t free();
 };
 

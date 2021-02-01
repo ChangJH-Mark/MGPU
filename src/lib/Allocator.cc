@@ -67,7 +67,7 @@ UnifyPointer MemAlloc(size_t size, MemType type, err_t *err, char init_value /*d
     }
     default:
     {
-        *err = UM_BADFLAG;
+        *err = UM_ERR_TYPE;
         return UnifyPointer();
     }
     } // switch
