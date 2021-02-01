@@ -3,63 +3,72 @@
 #include <string.h>
 #include "allocator.h"
 
-Mem MemAlloc(size_t size, MemType type, char init_value /*default 0*/)
+UnifyPointer MemAlloc(size_t size, MemType type, err_t *err, char init_value /*default 0*/)
 {
-    Mem res;
+    if (err == nullptr)
+    {
+        *err = UM_ERR_ARG_EMPTY;
+        return UnifyPointer();
+    }
+    *err = UM_SUCCESS;
     switch (type)
     {
+    case GPUMEM:
+    {
+        void *dev_p = nullptr;
+        *err = cudaMalloc(&dev_p, size);
+        if (*err != UM_SUCCESS)
+        {
+            return UnifyPointer();
+        }
+        auto res = UnifyPointer((char *)dev_p, nullptr, size, GPUMEM);
+        return res;
+    }
     case CPUNOPINNOMAP:
     {
         void *address = malloc(size);
         memset(address, init_value, size);
-        res.uptr = UnifyPointer(nullptr, (char *)address, size, type);
-        res.err = UM_SUCCESS;
-        return res;
-        break;
-    }
-    case CPUNOPINMAP:
-    {
+        auto res = UnifyPointer(nullptr, (char *)address, size, type);
         return res;
         break;
     }
     case CPUPINNOMAP:
     {
         char *cpu, *gpu;
-        res.err = cudaMallocHost(&cpu, size);
-        if (res.err != UM_SUCCESS)
+        *err = cudaMallocHost(&cpu, size);
+        if (*err != UM_SUCCESS)
         {
-            return res;
+            return UnifyPointer();
         }
-        res.uptr = UnifyPointer(nullptr, cpu, size, CPUPINNOMAP);
+        auto res = UnifyPointer(nullptr, cpu, size, CPUPINNOMAP);
+        return res;
         break;
     }
     case CPUPINMAP:
     {
         char *cpu, *gpu;
-        auto err = cudaHostAlloc(&cpu, size, cudaHostAllocMapped);
-        if (err != CUDA_SUCCESS)
+        *err = cudaHostAlloc(&cpu, size, cudaHostAllocMapped);
+        if (*err != CUDA_SUCCESS)
         {
-            res.err = err;
-            return res;
+            return UnifyPointer();
         }
-        res.err = err;
 #ifdef CUDA_VERSION
         gpu = cpu;
         if (CUDA_VERSION <= 4000)
         {
-            res.err = cudaHostGetDevicePointer(&gpu, cpu, 0);
-            if (res.err != UM_SUCCESS)
-                return res;
+            *err = cudaHostGetDevicePointer(&gpu, cpu, 0);
+            if (*err != UM_SUCCESS)
+                return UnifyPointer();
         }
 #endif
-        res.uptr = UnifyPointer(cpu, gpu, size, CPUPINMAP);
+        auto res = UnifyPointer(cpu, gpu, size, CPUPINMAP);
         return res;
         break;
     }
     default:
     {
-        res.err = UM_BADFLAG;
-        return res;
+        *err = UM_BADFLAG;
+        return UnifyPointer();
     }
     } // switch
 }

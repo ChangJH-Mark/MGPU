@@ -10,16 +10,25 @@ UnifyPointer::UnifyPointer(char *gpuaddr, char *cpuaddr, size_t size, MemType ty
     this->mem_type = type;
 }
 
-Error UnifyPointer::free()
+err_t UnifyPointer::free()
 {
     switch (mem_type)
     {
+    case GPUMEM:
+    {
+        return cudaFree(gpu_address);
+    }
     case CPUPINMAP:
     case CPUPINNOMAP:
+    {
         return cudaFree(cpu_address);
         break;
+    }
     case CPUNOPINNOMAP:
+    {
         std::free(cpu_address);
+        return UM_SUCCESS;
+    }
     default:
         break;
     }

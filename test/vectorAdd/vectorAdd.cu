@@ -52,19 +52,20 @@
  
      // Allocate the host input vector A
     //  float *h_A = (float *)malloc(size);
-    auto h_A = MemAlloc(size, CPUNOPINNOMAP);
+    err_t e;
+    auto h_A = MemAlloc(size, CPUNOPINNOMAP, &e);
 
  
      // Allocate the host input vector B
     //  float *h_B = (float *)malloc(size);
-     auto h_B = MemAlloc(size, CPUNOPINNOMAP);
+     auto h_B = MemAlloc(size, CPUNOPINNOMAP, &e);
  
      // Allocate the host output vector C
     //  float *h_C = (float *)malloc(size);
-     auto h_C = MemAlloc(size, CPUNOPINNOMAP);
+     auto h_C = MemAlloc(size, CPUNOPINNOMAP, &e);
  
      // Verify that allocations succeeded
-     if(h_A.err != UM_SUCCESS) {
+     if(e != UM_SUCCESS) {
          fprintf(stderr, "fail to allocate memory");
          exit(EXIT_FAILURE);
      }
@@ -72,44 +73,41 @@
      // Initialize the host input vectors
      for (int i = 0; i < numElements; ++i)
      {
-         h_A.uptr.cpu_address[i] = rand()/(float)RAND_MAX;
-         h_B.uptr.cpu_address[i] = rand()/(float)RAND_MAX;
+         h_A.cpu_address[i] = rand()/(float)RAND_MAX;
+         h_B.cpu_address[i] = rand()/(float)RAND_MAX;
      }
  
      // Allocate the device input vector A
-     float *d_A = NULL;
-    auto  err = cudaMalloc((void **)&d_A, size);
+    auto d_A = MemAlloc(size, GPUMEM, &e);
  
-     if (err != cudaSuccess)
+     if (e != cudaSuccess)
      {
-         fprintf(stderr, "Failed to allocate device vector A (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to allocate device vector A (error code %s)!\n", cudaGetErrorString(cudaError_t(e)));
          exit(EXIT_FAILURE);
      }
  
      // Allocate the device input vector B
-     float *d_B = NULL;
-     err = cudaMalloc((void **)&d_B, size);
+     auto d_B = MemAlloc(size, GPUMEM, &e);
  
-     if (err != cudaSuccess)
+     if (e != cudaSuccess)
      {
-         fprintf(stderr, "Failed to allocate device vector B (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to allocate device vector B (error code %s)!\n", cudaGetErrorString(cudaError_t(e)));
          exit(EXIT_FAILURE);
      }
  
      // Allocate the device output vector C
-     float *d_C = NULL;
-     err = cudaMalloc((void **)&d_C, size);
+     auto d_C = MemAlloc(size, GPUMEM, &e);
  
-     if (err != cudaSuccess)
+     if (e != cudaSuccess)
      {
-         fprintf(stderr, "Failed to allocate device vector C (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to allocate device vector C (error code %s)!\n", cudaGetErrorString(cudaError_t(e)));
          exit(EXIT_FAILURE);
      }
  
      // Copy the host input vectors A and B in host memory to the device input vectors in
      // device memory
      printf("Copy input data from the host memory to the CUDA device\n");
-     err = cudaMemcpy(d_A, h_A.uptr.cpu_address, size, cudaMemcpyHostToDevice);
+     auto err = cudaMemcpy(d_A.gpu_address, h_A.cpu_address, size, cudaMemcpyHostToDevice);
  
      if (err != cudaSuccess)
      {
@@ -117,7 +115,7 @@
          exit(EXIT_FAILURE);
      }
  
-     err = cudaMemcpy(d_B, h_B.uptr.cpu_address, size, cudaMemcpyHostToDevice);
+     err = cudaMemcpy(d_B.gpu_address, h_B.cpu_address, size, cudaMemcpyHostToDevice);
  
      if (err != cudaSuccess)
      {
@@ -129,30 +127,30 @@
      int threadsPerBlock = 256;
      int blocksPerGrid =(numElements + threadsPerBlock - 1) / threadsPerBlock;
      printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-     vectorAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, numElements);
+     vectorAdd<<<blocksPerGrid, threadsPerBlock>>>((float*)d_A.gpu_address, (float*)d_B.gpu_address, (float *)d_C.gpu_address, numElements);
      err = cudaGetLastError();
  
      if (err != cudaSuccess)
      {
-         fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(cudaError_t(err)));
          exit(EXIT_FAILURE);
      }
  
      // Copy the device result vector in device memory to the host result vector
      // in host memory.
      printf("Copy output data from the CUDA device to the host memory\n");
-     err = cudaMemcpy(h_C.uptr.cpu_address, d_C, size, cudaMemcpyDeviceToHost);
+     err = cudaMemcpy(h_C.cpu_address, d_C.gpu_address, size, cudaMemcpyDeviceToHost);
  
      if (err != cudaSuccess)
      {
-         fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to copy vector C from device to host (error code %s)!\n", cudaGetErrorString(cudaError_t(err)));
          exit(EXIT_FAILURE);
      }
  
      // Verify that the result vector is correct
      for (int i = 0; i < numElements; ++i)
      {
-         if (fabs(h_A.uptr.cpu_address[i] + h_B.uptr.cpu_address[i] - h_C.uptr.cpu_address[i]) > 1e-5)
+         if (fabs(h_A.cpu_address[i] + h_B.cpu_address[i] - h_C.cpu_address[i]) > 1e-5)
          {
              fprintf(stderr, "Result verification failed at element %d!\n", i);
              exit(EXIT_FAILURE);
@@ -162,34 +160,34 @@
      printf("Test PASSED\n");
  
      // Free device global memory
-     err = cudaFree(d_A);
+     err =(cudaError_t)  d_A.free();
  
      if (err != cudaSuccess)
      {
-         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to free device vector A (error code %s)!\n", cudaGetErrorString(cudaError_t(err)));
          exit(EXIT_FAILURE);
      }
  
-     err = cudaFree(d_B);
+     err = (cudaError_t)d_B.free();
  
      if (err != cudaSuccess)
      {
-         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to free device vector B (error code %s)!\n", cudaGetErrorString(cudaError_t(err)));
          exit(EXIT_FAILURE);
      }
  
-     err = cudaFree(d_C);
+     err = (cudaError_t) d_C.free();
  
      if (err != cudaSuccess)
      {
-         fprintf(stderr, "Failed to free device vector C (error code %s)!\n", cudaGetErrorString(err));
+         fprintf(stderr, "Failed to free device vector C (error code %s)!\n", cudaGetErrorString(cudaError_t(err)));
          exit(EXIT_FAILURE);
      }
  
      // Free host memory
-     h_A.uptr.free();
-     h_B.uptr.free();
-     h_C.uptr.free();
+     h_A.free();
+     h_B.free();
+     h_C.free();
  
      printf("Done\n");
      return 0;

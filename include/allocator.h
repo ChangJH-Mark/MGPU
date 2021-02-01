@@ -17,11 +17,6 @@ enum MemType {
 };
 #endif
 
-typedef struct {
-    UnifyPointer uptr;
-    Error err;
-}Mem;
-
-Mem MemAlloc(size_t, MemType, char init_value = 0);
+UnifyPointer MemAlloc(size_t, MemType, err_t* err, char init_value = 0);
 
 #endif

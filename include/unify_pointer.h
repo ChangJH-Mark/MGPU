@@ -10,7 +10,6 @@ enum MemType
 {
     GPUMEM,
     CPUNOPINNOMAP,
-    CPUNOPINMAP,
     CPUPINNOMAP,
     CPUPINMAP,
 };
@@ -27,7 +26,7 @@ public:
 public:
     UnifyPointer(){};
     UnifyPointer(char *gpuaddr, char *cpuaddr, size_t size, MemType type);
-    Error free();
+    err_t free();
 };
 
 #endif
