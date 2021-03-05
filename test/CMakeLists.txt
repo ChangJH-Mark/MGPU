@@ -1,1 +1,2 @@
 add_subdirectory(vectorAdd)
+add_subdirectory(Utilities)
