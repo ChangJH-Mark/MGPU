@@ -10,6 +10,7 @@ set(LIBRARY_OUTPUT_DIRECTORY /opt/custom/lib)
 include_directories(./include)
 
 add_subdirectory(src/lib)
+add_subdirectory(src/Util)
 add_subdirectory(test)
 
 target_link_libraries(main allocator unify_pointer)

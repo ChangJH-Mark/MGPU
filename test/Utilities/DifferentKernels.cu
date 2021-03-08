@@ -2,6 +2,7 @@
 // Created by root on 2021/3/3.
 //
 #include <stdio.h>
+#include <unistd.h>
 #define DATA_SIZE 10000000
 
 __global__ void vecAdd(int *a, int *b, int *c, int num) {
@@ -85,6 +86,7 @@ int main() {
     cudaStreamSynchronize(streams[0]);
     correctCheck(h_a, 0);
     cudaMemcpyAsync(h_a, d_c_add, sizeof(int) * DATA_SIZE, cudaMemcpyDeviceToHost, streams[1]);
+    sleep(3);
     cudaDeviceSynchronize();
     correctCheck(h_a, 1);
 }
