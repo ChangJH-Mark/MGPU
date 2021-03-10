@@ -2,27 +2,12 @@
 #include <stdlib.h>
 #include "unify_pointer.h"
 
-UnifyPointer::UnifyPointer(char *gpuaddr, char *cpuaddr, size_t size, MemType type)
+UnifyPointer::UnifyPointer(void *gpuaddr, void *cpuaddr, size_t size, MemType type)
 {
     cpu_address = cpuaddr;
     gpu_address = gpuaddr;
     this->size = size;
     this->mem_type = type;
-}
-
-// Return统一内存的host端地址
-char* UnifyPointer::hostAddr() {
-    return cpu_address;
-}
-
-// Return统一内存的device端地址
-char* UnifyPointer::deviceAddr() {
-    return gpu_address;
-}
-
-// Return内存大小
-size_t UnifyPointer::len() {
-    return size;
 }
 
 err_t UnifyPointer::free()

@@ -18,7 +18,7 @@ enum MemType {
 #endif
 
 // Return统一指针类型
-// 输入内存大小size_t
+// 输入内存大小size_t byte
 //          内存类型如GPUMEM、CPUPINMAP
 //          err_t的指针，向client返回错误码
 //          内存初始值init_value，默认是0

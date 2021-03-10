@@ -21,14 +21,14 @@ UnifyPointer MemAlloc(size_t size, MemType type, err_t *err, char init_value /*d
         {
             return UnifyPointer();
         }
-        auto res = UnifyPointer((char *)dev_p, nullptr, size, GPUMEM);
+        auto res = UnifyPointer(dev_p, nullptr, size, GPUMEM);
         return res;
     }
     case CPUNOPINNOMAP:
     {
         void *address = malloc(size);
         memset(address, init_value, size);
-        auto res = UnifyPointer(nullptr, (char *)address, size, type);
+        auto res = UnifyPointer(nullptr, address, size, type);
         return res;
         break;
     }
@@ -46,7 +46,7 @@ UnifyPointer MemAlloc(size_t size, MemType type, err_t *err, char init_value /*d
     }
     case CPUPINMAP:
     {
-        char *cpu, *gpu;
+        void *cpu, *gpu;
         *err = cudaHostAlloc(&cpu, size, cudaHostAllocMapped);
         if (*err != CUDA_SUCCESS)
         {

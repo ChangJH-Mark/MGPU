@@ -14,7 +14,7 @@ int main() {
     auto h_a = MemAlloc(N, CPUPINMAP, &err);
     auto h_b = MemAlloc(N, CPUPINMAP, &err);
     auto h_c = MemAlloc(N, CPUPINMAP, &err);
-    vectorAdd<<<1, 256>>>((float*)h_a.hostAddr(), (float*)h_b.hostAddr(), (float*)h_c.hostAddr(), N);
+    vectorAdd<<<1, 256>>>(h_a.hostAddr<float>(), h_b.hostAddr<float>(), h_c.hostAddr<float>(), N);
     h_a.free();
     h_b.free();
     h_c.free();

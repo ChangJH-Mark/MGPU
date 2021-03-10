@@ -20,16 +20,16 @@ enum MemType
 class UnifyPointer
 {
 private:
-    char *cpu_address;
-    char *gpu_address;
+    void *cpu_address;
+    void *gpu_address;
     size_t size;
     MemType mem_type;
 public:
     UnifyPointer(){};
-    UnifyPointer(char *gpuaddr, char *cpuaddr, size_t size, MemType type);
-    char* hostAddr();
-    char* deviceAddr();
-    size_t len();
+    UnifyPointer(void *gpuaddr, void *cpuaddr, size_t size, MemType type);
+    template<class T> T* hostAddr() {return (T*)cpu_address;}
+    template<class T> T* deviceAddr() {return (T*)gpu_address;}
+    size_t len() {return size;};
     err_t free();
 };
 

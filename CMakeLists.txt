@@ -5,7 +5,7 @@ aux_source_directory(. ROOT_SRCS)
 add_executable(main ${ROOT_SRCS})
 
 set(EXECUTABLE_OUTPUT_PATH /opt/custom/bin)
-set(LIBRARY_OUTPUT_DIRECTORY /opt/custom/lib)
+set(LIBRARY_OUTPUT_PATH /opt/custom/lib)
 
 include_directories(./include)
 
@@ -13,4 +13,4 @@ add_subdirectory(src/lib)
 add_subdirectory(src/Util)
 add_subdirectory(test)
 
-target_link_libraries(main allocator unify_pointer)
+target_link_libraries(main um)
