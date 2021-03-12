@@ -1,5 +1,6 @@
 find_package(CUDA REQUIRED)
 if(${CUDA_FOUND})
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; "-gencode arch=compute_50,code=sm_50")
     cuda_add_executable(deviceQuery deviceQuery.cu)
     cuda_add_executable(concurrentKernel concurrentKernel.cu)
     cuda_add_executable(differentKernels DifferentKernels.cu)

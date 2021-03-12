@@ -1,5 +1,21 @@
 #include <iostream>
+#include <csignal>
+#include "server/server.h"
 using namespace  std;
+
+void sigint_handler(int signal) {
+    cout << "receive signal: " << signal << endl;
+    cout << "exit" << endl;
+    exit(signal);
+}
+
 int main() {
-    cout << "hello world" << endl;
+    using namespace mgpu;
+
+    signal(SIGINT,sigint_handler);
+    cout << "init server" << endl;
+    auto server = init_server();
+    cout << "initialization complete, wait for jobs" << endl;
+    server->join();
+    return 0;
 }
