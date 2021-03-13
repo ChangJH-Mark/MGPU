@@ -27,7 +27,8 @@ namespace mgpu {
     public:
         Device() =default;
         void observe();
-        void run() override;
+        void run() override{};
+        void init() override;
         void join() override{};
 
     private:

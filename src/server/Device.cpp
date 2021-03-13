@@ -4,11 +4,11 @@
 
 #include <cuda_runtime.h>
 #include "server/device.h"
-#include "common/cuda_helper.h"
+#include "common/helper.h"
 
 using namespace mgpu;
 
-void mgpu::Device::run() {
+void mgpu::Device::init() {
     cudaCheck(cudaGetDeviceCount(&num));
     if(num <= 0){
         std::cerr << "no GPU availiable, please check again! " << std::endl;

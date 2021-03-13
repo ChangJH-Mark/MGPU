@@ -15,9 +15,13 @@ Server* mgpu::init_server() {
     auto server = new Server;
     server->mod["device"] = make_shared<Device>();
     server->mod["scheduler"] = make_shared<Scheduler>();
-    server->mod["receiver"] = make_shared<Reciver>();
+    server->mod["receiver"] = make_shared<Receiver>();
     server->mod["conductor"] = make_shared<Conductor>();
     for(const auto& m : server->mod) {
+        m.second->init();
+    }
+
+    for(const auto& m : server->mod){
         m.second->run();
     }
     Server::single_instance = server;

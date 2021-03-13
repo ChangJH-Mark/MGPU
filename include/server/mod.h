@@ -8,8 +8,9 @@ namespace mgpu {
     class Module {
     public:
         Module() : hasThread(false) {}
-        virtual void run(){};
-        virtual void join(){};
+        virtual void init(){}
+        virtual void run(){}
+        virtual void join(){}
         bool hasThread;
     };
 }
