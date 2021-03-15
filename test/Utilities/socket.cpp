@@ -1,60 +1,39 @@
 //
 // Created by root on 2021/3/13.
 //
-#include <sys/socket.h>
 #include <stdio.h>
-#include <sys/stat.h>
-#include <sys/un.h>
-#include <cstdlib>
+#include <stdlib.h>
+#include <iostream>
 #include <unistd.h>
-#include <cstddef>
-
-char *socket_path = "server.socket";
-struct a {
-    int a;
-    char * b;
-};
-struct b{
-    int a;
-    char b[20];
-};
-
-int main(){
-    int fd, size, listenfd;
-    struct sockaddr_un serun, cliun;
-    memset(&serun, 0, sizeof(serun));
-    serun.sun_family = AF_UNIX;
-    strcpy(serun.sun_path, socket_path);
-    if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){
+#include <sys/socket.h>
+#include <sys/un.h>
+const char* cli_sock = "/tmp/mgpu/client.sock";
+const char* server_sock = "/tmp/mgpu/server.sock";
+int main(int argc, char ** argv){
+    auto cli = socket(PF_LOCAL, SOCK_STREAM, 0);
+    if(cli < 0){
+        perror("fail to create socket");
         exit(1);
     }
-    size = offsetof(struct sockaddr_un, sun_path) + strlen(serun.sun_path);
-    if(bind(fd, (struct sockaddr *) &serun, size) < 0) {
+    struct sockaddr_un cli_address;
+    cli_address.sun_family = AF_LOCAL;
+    strcpy(cli_address.sun_path, cli_sock);
+    if(0 > bind(cli, (struct sockaddr *)&cli_address, SUN_LEN(&cli_address))) {
+        perror("fail to bind address");
         exit(1);
     }
-    if((listenfd = listen(fd, 10) )< 0) {
+
+    struct sockaddr_un server_address {AF_LOCAL};
+    strcpy(server_address.sun_path, server_sock);
+    if( 0 > connect(cli, (struct sockaddr*) &server_address, SUN_LEN(&server_address)))
+    {
+        perror("fail to connect");
         exit(1);
     }
-    printf("UNIX domain socket bound\n");
-    while(1){
-        int clifd, len;
-        struct sockaddr_un un;
-        struct stat statbuf;
-        len = sizeof(un);
-        if((clifd = accept(listenfd, (struct sockaddr *)&un, reinterpret_cast<socklen_t *>(&len))) < 0){
-            exit(1);
-        }
-
-        len -= offsetof(struct sockaddr_un, sun_path);
-        un.sun_path[len]=0;
-        if(stat(un.sun_path, &statbuf) < 0){
-            exit(1);
-        }
-        if(S_ISSOCK(statbuf.st_mode) == 0) {
-            exit(1);
-        }
-
-        unlink(un.sun_path);
-    }
+    const char * message = (argc > 1) ? argv[1] : "default message";
+    auto sended = send(cli, message, strlen(message), 0);
+    std::cout << "send:" << strlen(message) << " bytes" << std::endl;
+    close(cli);
+    unlink(cli_sock);
     exit(0);
 }

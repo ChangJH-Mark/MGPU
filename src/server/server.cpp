@@ -35,3 +35,12 @@ void Server::join() {
         }
     }
 }
+
+void mgpu::destroy_server() {
+    auto server = Server::single_instance;
+    if(server == nullptr)
+        return;
+    for(const auto& m : server->mod) {
+        m.second->destroy();
+    }
+}

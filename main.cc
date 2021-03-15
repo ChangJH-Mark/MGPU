@@ -6,12 +6,12 @@ using namespace  std;
 void sigint_handler(int signal) {
     cout << "receive signal: " << signal << endl;
     cout << "exit" << endl;
+    mgpu::destroy_server();
     exit(signal);
 }
 
 int main() {
     using namespace mgpu;
-
     signal(SIGINT,sigint_handler);
     cout << "init server" << endl;
     auto server = init_server();

@@ -20,6 +20,7 @@ using namespace std;
 namespace mgpu {
     class Server;
     extern Server * init_server();
+    extern void destroy_server();
 
     class Server {
     public:
@@ -32,6 +33,7 @@ namespace mgpu {
         vector<Command> vec;
         map<string, shared_ptr<Module>> mod;
         friend Server* init_server();
+        friend void destroy_server();
     };
 }
 #endif //FASTGPU_SERVER_H

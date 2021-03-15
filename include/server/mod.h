@@ -11,6 +11,7 @@ namespace mgpu {
         virtual void init(){}
         virtual void run(){}
         virtual void join(){}
+        virtual void destroy(){}
         bool hasThread;
     };
 }
