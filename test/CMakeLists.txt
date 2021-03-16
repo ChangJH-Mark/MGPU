@@ -1,2 +1,3 @@
+add_subdirectory(client)
 add_subdirectory(vectorAdd)
 add_subdirectory(Utilities)

@@ -9,6 +9,8 @@
 #include <map>
 #include <sys/socket.h>
 #include "mod.h"
+#include "common/message.h"
+#include "commands.h"
 
 namespace mgpu{
     class Receiver : public Module {
@@ -22,8 +24,9 @@ namespace mgpu{
         void destroy() override;
 
     private:
-        void do_listen(uint socket);
+        void do_accept(uint socket);
         void do_worker(uint socket, sockaddr* cli, socklen_t* len);
+        void push_command(AbMSG*);
 
     private:
         uint server_socket{};

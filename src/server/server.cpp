@@ -7,7 +7,7 @@ using namespace mgpu;
 
 Server* Server::single_instance = nullptr;
 
-Server* mgpu::init_server() {
+Server* mgpu::get_server() {
     if(Server::single_instance != nullptr){
         return Server::single_instance;
     }

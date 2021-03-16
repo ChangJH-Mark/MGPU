@@ -7,7 +7,7 @@
 #include <thread>
 #include <iostream>
 #include <mutex>
-#include <vector>
+#include <list>
 #include <map>
 #include "mod.h"
 #include "commands.h"
@@ -19,7 +19,7 @@
 using namespace std;
 namespace mgpu {
     class Server;
-    extern Server * init_server();
+    extern Server * get_server();
     extern void destroy_server();
 
     class Server {
@@ -29,11 +29,13 @@ namespace mgpu {
 
     private:
         static Server *single_instance;
-        mutex v_mutex;
-        vector<Command> vec;
+        mutex mtx;
+        list<Command> cmd_list;
         map<string, shared_ptr<Module>> mod;
-        friend Server* init_server();
+        friend Server* get_server();
         friend void destroy_server();
+
+        friend class Receiver;
     };
 }
 #endif //FASTGPU_SERVER_H

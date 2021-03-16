@@ -3,16 +3,18 @@
 //
 
 #include "server/receiver.h"
+#include "server/server.h"
+#include "common/IPC.h"
 #include <unistd.h>
 #include <sys/un.h>
 #include <iostream>
-#define SERVER_ADDR "/tmp/mgpu/server.sock"
+#include <cuda_runtime.h>
 
 using namespace mgpu;
 
 void Receiver::init() {
-    const char* socket_address = SERVER_ADDR;
-    max_worker = 4;
+    const char* socket_address = mgpu::server_path;
+    max_worker = 100;
     num_worker = 0;
     server_socket = socket(PF_LOCAL, SOCK_STREAM, 0);
     if(server_socket < 0){
@@ -25,7 +27,7 @@ void Receiver::init() {
         perror("fail to bind server socket");
         exit(1);
     }
-    if(0 > listen(server_socket, 10)){
+    if(0 > listen(server_socket, 100)){
         perror("fail to listen server socket");
         exit(1);
     }
@@ -33,24 +35,41 @@ void Receiver::init() {
 
 void Receiver::destroy() {
     close(server_socket);
-    unlink(SERVER_ADDR);
+    unlink(mgpu::server_path);
 }
 
 void Receiver::run() {
-    this->listener = std::move(std::thread(&Receiver::do_listen, this, server_socket));
+    this->listener = std::move(std::thread(&Receiver::do_accept, this, server_socket));
 }
 
 void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
-    char * buffer = new char[256];
-    auto ssize = recv(socket, buffer, 256, 0);
-    buffer[ssize] = 0;
-    std::cout << "thread: " << std::this_thread::get_id() << std::endl;
-    std::cout << "message: " << buffer << std::endl;
-    delete [] buffer;
+    auto msg = (void *)malloc(256);
+    auto size = recv(socket, msg, 256, 0);
+    *((char*)msg + size) = 0;
+    message_t type = *(message_t*)msg;
+    switch (type) {
+        case MSG_CUDA_MALLOC: {
+            push_command(static_cast<cudaMallocMSG*>(msg));
+            break;
+        }
+        default:
+            std::cout << "fail to recognize message!" << std::endl;
+    }
     num_worker--;
 }
 
-void Receiver::do_listen(uint socket) {
+// push commands to server task list
+// thread-safe
+void Receiver::push_command(AbMSG *msg) {
+    auto server = get_server();
+    server->mtx.lock();
+    Command cmd(msg);
+    server->cmd_list.push_back(Command(msg));
+    std::cout << "now command list size is " << server->cmd_list.size() << std::endl;
+    server->mtx.unlock();
+}
+
+void Receiver::do_accept(uint socket) {
     while(1){
         if(num_worker >= max_worker){
             continue;

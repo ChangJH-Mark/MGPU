@@ -14,7 +14,7 @@ int main() {
     using namespace mgpu;
     signal(SIGINT,sigint_handler);
     cout << "init server" << endl;
-    auto server = init_server();
+    auto server = get_server();
     cout << "initialization complete, wait for jobs" << endl;
     server->join();
     return 0;
