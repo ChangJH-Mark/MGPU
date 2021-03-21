@@ -7,12 +7,12 @@
 namespace mgpu {
     class Module {
     public:
-        Module() : hasThread(false) {}
+        Module() : joinable(false) {}
         virtual void init(){}
         virtual void run(){}
         virtual void join(){}
         virtual void destroy(){}
-        bool hasThread;
+        bool joinable;
     };
 }
 #endif //FASTGPU_MOD_H

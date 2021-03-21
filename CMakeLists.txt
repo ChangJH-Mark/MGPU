@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(FASTGPU VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
-aux_source_directory(. ROOT_SRCS)
-add_executable(main ${ROOT_SRCS} src/server/server.cpp src/server/Device.cpp src/server/Receiver.cpp src/common/IPC.cpp)
+aux_source_directory(src/server SERVER_SRCS)
+aux_source_directory(src/common COMMON_SRCS)
+add_executable(main ${COMMON_SRCS} ${SERVER_SRCS} main.cc)
 add_library(client include/client/api.h src/client.cpp src/common/IPC.cpp include/common/message.h)
 
 set(EXECUTABLE_OUTPUT_PATH /opt/custom/bin)

@@ -6,14 +6,15 @@
 #define FASTGPU_MESSAGE_H
 #define MSG_CUDA_MALLOC 1
 namespace mgpu {
-    typedef uint message_t;
+    typedef uint msg_t;
 
     typedef struct {
     public:
-        message_t type; // message type
-    } AbMSG; // abstract message
+        msg_t type; // message type
+        uint key; // pid << 16 + stream_t
+    } AbMsg; // abstract message
 
-    typedef struct : public AbMSG {
+    typedef struct : public AbMsg {
         size_t size; // content
     } cudaMallocMSG;
 }

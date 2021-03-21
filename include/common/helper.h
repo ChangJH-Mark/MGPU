@@ -9,7 +9,7 @@
 #include <cuda.h>
 using namespace std;
 
-#define cudaCheck(x) if(x!=cudaSuccess) { \
+#define cudaCheck(x) if((x)!=cudaSuccess) { \
 cerr << "cuda error: " << x << " message: " << cudaGetErrorString(x) << endl; \
 exit(EXIT_FAILURE);\
 }

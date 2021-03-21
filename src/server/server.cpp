@@ -13,6 +13,7 @@ Server* mgpu::get_server() {
     }
 
     auto server = new Server;
+    Server::single_instance = server;
     server->mod["device"] = make_shared<Device>();
     server->mod["scheduler"] = make_shared<Scheduler>();
     server->mod["receiver"] = make_shared<Receiver>();
@@ -24,16 +25,16 @@ Server* mgpu::get_server() {
     for(const auto& m : server->mod){
         m.second->run();
     }
-    Server::single_instance = server;
     return Server::single_instance;
 }
 
 void Server::join() {
     for(const auto& m : this->mod) {
-        if(m.second->hasThread){
+        if(m.second->joinable){
             m.second->join();
         }
     }
+    while (1) {}
 }
 
 void mgpu::destroy_server() {

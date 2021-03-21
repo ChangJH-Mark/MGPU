@@ -10,7 +10,7 @@
 #include "common/message.h"
 
 namespace mgpu {
-
+    extern pid_t pid;
     extern const char *server_path;
 
     class IPCClient {

@@ -11,12 +11,13 @@
 #include "mod.h"
 #include "common/message.h"
 #include "commands.h"
+#include "server.h"
 
 namespace mgpu{
     class Receiver : public Module {
     public:
         Receiver(){
-            hasThread = true;
+            joinable = true;
         };
         void init() override;
         void run() override;
@@ -24,9 +25,9 @@ namespace mgpu{
         void destroy() override;
 
     private:
-        void do_accept(uint socket);
+        void do_accept();
         void do_worker(uint socket, sockaddr* cli, socklen_t* len);
-        void push_command(AbMSG*);
+        void push_command(AbMsg*, uint cli);
 
     private:
         uint server_socket{};

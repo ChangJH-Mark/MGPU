@@ -10,6 +10,8 @@ using namespace mgpu;
 
 const char * mgpu::server_path = "/tmp/mgpu/server.sock";
 
+pid_t mgpu::pid = getpid();
+
 IPCClient* IPCClient::single_instance = nullptr;
 
 IPCClient* IPCClient::get_client() {
@@ -43,7 +45,7 @@ void IPCClient::connect() {
     if(0 > ::connect(this->socket, (struct sockaddr*)(&server_addr), SUN_LEN(&server_addr)))
     {
         ::perror("fail to connect to server:");
-        exit(1);
+        ::exit(1);
     }
 }
 
