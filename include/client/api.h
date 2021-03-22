@@ -27,9 +27,23 @@ namespace mgpu {
     // return gpu memory pointer, 0 on failure
     void *cudaMalloc(size_t size);
 
-    // communicate with server, set @size bytes with @value at @addr on gpu.
-    // return 0 on success, -1 on failure
-    int gpuMemset(void *addr, int value, size_t size);
+    // communicate with server, call cudaMallocHost with @size bytes synchronously
+    // return host memory pointer, 0 on failure.
+    void *cudaMallocHost(size_t size);
+
+    // communicate with server, call cudaFree to free memory at @ptr
+    bool cudaFree(void * devPtr);
+
+    // communicate with server, call cudaFreeHost to free page-locked memory @ptr
+    bool cudaFreeHost(void * ptr);
+
+    // communicate with server, call cudaMemset
+    // initializes @count bytes @devPtr memory to @value
+    bool cudaMemset(void *devPtr, int value, size_t count);
+
+    // communicate with server, call cudaMemcpy
+    // copy @count bytes from @src to @dst, use @kind distinguish cpyD2H, cpyD2D, cpyH2D, cpyH2H
+    bool cudaMemcpy(void *dst, const void * src, size_t count, ::cudaMemcpyKind kind);
 
     // communicate with server, copy from @src to @dest, @size bytes
     // @stream = -1 equal default stream

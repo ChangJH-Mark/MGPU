@@ -24,7 +24,12 @@ namespace mgpu {
         void conduct(std::shared_ptr<Command> cmd);
 
     private:
-        void do_cudamalloc(std::shared_ptr<Command> cmd);
+        void do_cudamalloc(const std::shared_ptr<Command>& cmd);
+        void do_cudamallochost(const std::shared_ptr<Command>& cmd);
+        void do_cudafree(const std::shared_ptr<Command>& cmd);
+        void do_cudafreehost(const std::shared_ptr<Command>& cmd);
+        void do_cudamemset(const std::shared_ptr<Command>& cmd);
+        void do_cudamemcpy(const std::shared_ptr<Command>& cmd);
     };
 }
 #endif //FASTGPU_CONDUCTOR_H

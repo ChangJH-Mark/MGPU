@@ -4,6 +4,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <future>
+#include <sys/ipc.h>
+#include <sys/types.h>
+#include <sys/shm.h>
 #include "common/IPC.h"
 #include "common/message.h"
 using namespace mgpu;
@@ -16,55 +20,116 @@ IPCClient* IPCClient::single_instance = nullptr;
 
 IPCClient* IPCClient::get_client() {
     if(single_instance == nullptr){
-        pid_t pid = getpid();
-        char exe[256];
-        auto size = readlink("/proc/self/exe", exe, 256);
-        exe[size] = 0;
-        std::string exe_str(exe);
-        auto index = exe_str.rfind("/");
-        std::string path = exe_str.substr(index, exe_str.length() - index) + "_" + std::to_string(pid);
-        single_instance = new IPCClient(path);
+        single_instance = new IPCClient();
+        atexit(destroy_client);
     }
     return single_instance;
 }
 
-IPCClient::IPCClient(const std::string &name){
-    this->socket = ::socket(PF_LOCAL, SOCK_STREAM, 0);
-    this->address = "/tmp/mgpu/" + name + ".sock";
-    struct sockaddr_un sock_addr{PF_LOCAL};
-    strcpy(sock_addr.sun_path,this->address.c_str());
-    if(0 > ::bind(this->socket, (struct sockaddr *)&sock_addr, SUN_LEN(&sock_addr))) {
-        ::perror("fail to initialize ipc client");
-        ::exit(1);
-    }
+IPCClient::IPCClient() {
 }
 
-void IPCClient::connect() {
+uint IPCClient::connect() {
+    // local socket
+    auto socket = ::socket(PF_LOCAL, SOCK_STREAM, 0);
+    // remote socket
     struct sockaddr_un server_addr {PF_LOCAL};
     strcpy(server_addr.sun_path, server_path);
-    if(0 > ::connect(this->socket, (struct sockaddr*)(&server_addr), SUN_LEN(&server_addr)))
+    if(0 > ::connect(socket, (struct sockaddr*)(&server_addr), SUN_LEN(&server_addr)))
     {
         ::perror("fail to connect to server:");
         ::exit(1);
     }
+    return socket;
 }
 
-void* IPCClient::send(cudaMallocMSG* msg) {
-    auto size = sizeof(cudaMallocMSG);
-    if(size !=::send(this->socket, msg, size, 0)){
-        perror("fail to send cudaMalloc message");
+void IPCClient::socket_clear(uint socket) {
+    struct sockaddr_un addr;
+    socklen_t len;
+    getsockname(socket, (struct sockaddr*) &addr, &len);
+    ::close(socket);
+    ::unlink(addr.sun_path);
+}
+
+void IPCClient::socket_send(uint cli, void *msg, size_t size, uint flag, const char* err_msg) {
+    if(size != ::send(cli, msg, size, flag)) {
+        perror(err_msg);
         exit(1);
     }
+}
+
+void IPCClient::socket_recv(uint cli, void *dst, size_t size, uint flag, const char *err_msg) {
+    if(size != ::recv(cli, dst, size, flag)) {
+        perror(err_msg);
+        exit(1);
+    }
+}
+
+void* IPCClient::send(CudaMallocMsg* msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaMallocMsg), 0, "fail to send cudaMalloc message");
     void * ret;
-    auto ret_size = sizeof(void *);
-    if(ret_size !=::recv(this->socket, (void *)&ret, ret_size, 0)) {
-        perror("error to receive cudaMalloc return");
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMalloc return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+void* IPCClient::send(CudaMallocHostMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaMallocHostMsg), 0, "fail to send cudaMallocHost message");
+    mgpu::CudaMallocHostRet ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMallocHost return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    if(ret.ptr != shmat(ret.shmid,ret.ptr, 0)) {
+        perror("share memory with different address");
         exit(1);
     }
+    return ret.ptr;
+}
+
+bool IPCClient::send(CudaFreeMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaFreeMsg), 0, "fail to send cudaMallocHost message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMallocHost return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+bool IPCClient::send(CudaFreeHostMsg *msg) {
+    if(0 > shmdt(msg->ptr)) {
+        perror("fail to release share memory");
+        exit(1);
+    }
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaFreeHostMsg), 0, "fail to send cudaFreeHost message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaFreeHost return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+bool IPCClient::send(CudaMemsetMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaMemsetMsg), 0, "fail to send cudaMemset message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMemset return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+bool IPCClient::send(CudaMemcpyMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaMemcpyMsg), 0, "fail to send cudaMemcpy message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMemcpy return");
+    std::async(&IPCClient::socket_clear, this, cli);
     return ret;
 }
 
 IPCClient::~IPCClient() {
-    close(socket);
-    unlink(this->address.c_str());
+}
+
+void mgpu::destroy_client() {
+    delete IPCClient::get_client();
 }

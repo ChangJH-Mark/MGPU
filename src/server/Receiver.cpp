@@ -53,10 +53,22 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
     *((char*)msg + size) = 0;
     msg_t type = *(msg_t*)msg;
     switch (type) {
-        case MSG_CUDA_MALLOC: {
-            push_command(static_cast<cudaMallocMSG*>(msg), socket);
+        case MSG_CUDA_MALLOC:
+        case MSG_CUDA_MALLOC_HOST:
+        case MSG_CUDA_FREE:
+        case MSG_CUDA_FREE_HOST:
+        case MSG_CUDA_MEMSET:
+        case MSG_CUDA_MEMCPY:
+            push_command(static_cast<AbMsg *>(msg), socket);
             break;
-        }
+//        case MSG_CUDA_MALLOC: {
+//            push_command(static_cast<CudaMallocMsg*>(msg), socket);
+//            break;
+//        }
+//        case MSG_CUDA_MALLOC_HOST: {
+//            push_command(static_cast<CudaMallocHostMsg*>(msg), socket);
+//            break;
+//        }
         default:
             std::cerr << "fail to recognize message!" << std::endl;
     }

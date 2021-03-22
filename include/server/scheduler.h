@@ -7,6 +7,7 @@
 #include <thread>
 #include "mod.h"
 #include "server/server.h"
+#include "server/conductor.h"
 
 namespace mgpu {
     class Scheduler : public Module {
@@ -24,6 +25,7 @@ namespace mgpu {
         void do_scan();
 
     private:
+        std::shared_ptr<mgpu::Conductor> conductor;
         std::thread scanner;
     };
 }
