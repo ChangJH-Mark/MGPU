@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(FASTGPU VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
+enable_language(CUDA)
 aux_source_directory(src/server SERVER_SRCS)
 aux_source_directory(src/common COMMON_SRCS)
 add_executable(mgpu ${COMMON_SRCS} ${SERVER_SRCS} main.cc)
@@ -11,8 +12,8 @@ set(LIBRARY_OUTPUT_PATH /opt/custom/lib)
 
 include_directories(./include /usr/local/cuda-11.0/targets/x86_64-linux/include)
 
-add_subdirectory(src/lib)
-add_subdirectory(test)
-
 link_directories(/usr/local/cuda-11.0/targets/x86_64-linux/lib/)
 target_link_libraries(mgpu um pthread cudart)
+
+add_subdirectory(src/lib)
+add_subdirectory(test)
