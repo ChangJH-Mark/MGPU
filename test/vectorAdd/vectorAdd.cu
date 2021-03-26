@@ -45,23 +45,23 @@
  int
  main(void)
  {
-     // Print the vector length to be used, and compute its size
+     // Print the vector length to be used, and compute its p_size
      int numElements = 500;
      size_t size = numElements * sizeof(float);
      printf("[Vector addition of %d elements]\n", numElements);
  
      // Allocate the host input vector A
-    //  float *h_A = (float *)malloc(size);
+    //  float *h_A = (float *)malloc(p_size);
     err_t e;
     auto h_A = MemAlloc(size, CPUNOPINNOMAP, &e);
 
  
      // Allocate the host input vector B
-    //  float *h_B = (float *)malloc(size);
+    //  float *h_B = (float *)malloc(p_size);
      auto h_B = MemAlloc(size, CPUNOPINNOMAP, &e);
  
      // Allocate the host output vector C
-    //  float *h_C = (float *)malloc(size);
+    //  float *h_C = (float *)malloc(p_size);
      auto h_C = MemAlloc(size, CPUNOPINNOMAP, &e);
  
      // Verify that allocations succeeded

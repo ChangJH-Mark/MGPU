@@ -127,6 +127,15 @@ bool IPCClient::send(CudaMemcpyMsg *msg) {
     return ret;
 }
 
+bool IPCClient::send(CudaLaunchKernelMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaLaunchKernelMsg), 0, "fail to send cudaLaunchKerenl message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaLaunchKernel return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
 IPCClient::~IPCClient() {
 }
 

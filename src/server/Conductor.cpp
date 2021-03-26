@@ -2,6 +2,7 @@
 // Created by root on 2021/3/21.
 //
 #include <cuda_runtime.h>
+#include <cuda.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -34,6 +35,10 @@ void Conductor::conduct(std::shared_ptr<Command> cmd) {
         }
         case (MSG_CUDA_MEMCPY) : {
             std::async(&Conductor::do_cudamemcpy, this, cmd);
+            break;
+        }
+        case (MSG_CUDA_LAUNCH_KERNEL) : {
+            std::async(&Conductor::do_cudalaunchkernel, this, cmd);
             break;
         }
     }
@@ -86,5 +91,25 @@ void Conductor::do_cudamemcpy(const std::shared_ptr<Command>& cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemcpyMsg>();
     cudaCheck(::cudaMemcpy(msg->dst, msg->src, msg->count, msg->kind));
+    cmd->finish<bool>(true);
+}
+
+void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
+    cudaCheck(::cudaSetDevice(cmd->get_device()));
+    auto msg = cmd->get_msg<CudaLaunchKernelMsg>();
+    CUmodule cuModule;
+    cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, "/opt/custom/ptx/vecAdd.cubin")));
+    CUfunction vecAdd;
+    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&vecAdd, cuModule, "vecAdd")));
+    void * extra[] = {
+            CU_LAUNCH_PARAM_BUFFER_POINTER, msg->param,
+            CU_LAUNCH_PARAM_BUFFER_SIZE, &(msg->p_size),
+            CU_LAUNCH_PARAM_END
+    };
+    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(vecAdd, msg->conf.grid.x, 1, 1,
+                                                        msg->conf.block.x, 1, 1,
+                                                        msg->conf.share_memory,
+                                                        (CUstream) msg->conf.stream,
+                                                        NULL, extra)));
     cmd->finish<bool>(true);
 }

@@ -11,17 +11,17 @@
 using namespace std;
 
 int main() {
-    void * dev_ptr = mgpu::cudaMalloc(N);
-    mgpu::cudaMemset(dev_ptr, 0x1, N);
+    void * dev_ptr1 = mgpu::cudaMalloc(N);
+    void * dev_ptr2 = mgpu::cudaMalloc(N);
+    mgpu::cudaMemset(dev_ptr1, 0x1, N);
+    mgpu::cudaMemset(dev_ptr2, 0x0, N);
     void * host_ptr = mgpu::cudaMallocHost(N);
-    mgpu::cudaMemcpy(host_ptr, dev_ptr, N, cudaMemcpyDeviceToHost);
-    sleep(3);
-    mgpu::cudaFree(dev_ptr);
+    printf("%x", host_ptr);
+    mgpu::cudaLaunchKernel({{1024},{1024}, 0, 0}, "vecAdd", dev_ptr1, dev_ptr2, N);
+    sleep(5);
+    mgpu::cudaMemcpy(host_ptr, dev_ptr2, 10, cudaMemcpyDeviceToHost);
+    mgpu::cudaFree(dev_ptr1);
+    mgpu::cudaFree(dev_ptr2);
     mgpu::cudaFreeHost(host_ptr);
-//    auto ret = mgpu::cudaMalloc(1 << 20);
-//    cout << "malloc success!" << ret << endl;
-//
-//    auto h_ret = mgpu::cudaMallocHost(1 << 20);
-//    cout << "malloc host success!" << h_ret << endl;
     return 0;
 }

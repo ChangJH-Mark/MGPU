@@ -30,6 +30,7 @@ namespace mgpu {
         void do_cudafreehost(const std::shared_ptr<Command>& cmd);
         void do_cudamemset(const std::shared_ptr<Command>& cmd);
         void do_cudamemcpy(const std::shared_ptr<Command>& cmd);
+        void do_cudalaunchkernel(const std::shared_ptr<Command>& cmd);
     };
 }
 #endif //FASTGPU_CONDUCTOR_H

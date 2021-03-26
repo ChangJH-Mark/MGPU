@@ -39,7 +39,7 @@ void mgpu::Device::observe() {
     for(auto & iter : gpu_list) {
         cout << "device NO." << iter->ID << endl;
         cout << "max blocks per sm: " << iter->max_blocks << endl;
-        cout << "warp size : " << iter->warp_size << " threads" << endl;
+        cout << "warp p_size : " << iter->warp_size << " threads" << endl;
         cout << "stream multiprocessor number : " << iter->sms << endl;
         cout << "share memory per sm(bytes) : " << iter->share_mem << endl;
         cout << "global_memory(MiB) : " << (iter->global_mem >> 10) << endl;

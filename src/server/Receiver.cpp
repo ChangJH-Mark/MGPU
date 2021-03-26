@@ -59,6 +59,7 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
         case MSG_CUDA_FREE_HOST:
         case MSG_CUDA_MEMSET:
         case MSG_CUDA_MEMCPY:
+        case MSG_CUDA_LAUNCH_KERNEL:
             push_command(static_cast<AbMsg *>(msg), socket);
             break;
 //        case MSG_CUDA_MALLOC: {
@@ -91,11 +92,11 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     mtx->lock();
     list->push_back(make_shared<Command>(msg, cli));
     mtx->unlock();
-    std::cout << "now command map size is " << server->task_map.size() << std::endl;
+    std::cout << "now command map p_size is " << server->task_map.size() << std::endl;
     for(auto m : server->task_map){
         std::cout << "pid : " << (m.first >> 16) << std::endl;
         std::cout << "key : " << (m.first) << std::endl;
-        std::cout << "list size: " << (m.second.second->size()) << std::endl;
+        std::cout << "list p_size: " << (m.second.second->size()) << std::endl;
     }
     server->map_mtx.unlock();
 }

@@ -13,7 +13,7 @@ set(LIBRARY_OUTPUT_PATH /opt/custom/lib)
 
 include_directories(./include /usr/local/cuda-11.0/targets/x86_64-linux/include)
 link_directories(/usr/local/cuda-11.0/targets/x86_64-linux/lib/)
-target_link_libraries(mgpu um pthread cudart)
+target_link_libraries(mgpu um pthread cudart cuda)
 
 add_subdirectory(src/lib)
 add_subdirectory(test)

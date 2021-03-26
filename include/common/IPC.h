@@ -24,6 +24,7 @@ namespace mgpu {
         bool send(CudaFreeHostMsg*);
         bool send(CudaMemsetMsg*);
         bool send(CudaMemcpyMsg*);
+        bool send(CudaLaunchKernelMsg*);
     public:
         ~IPCClient();
     private:

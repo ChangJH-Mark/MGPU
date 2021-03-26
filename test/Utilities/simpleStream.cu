@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #define DEFAULT_PINNED_GENERIC_MEMORY true
-// Macro to aligned up to the memory size in question
+// Macro to aligned up to the memory p_size in question
 #define MEMORY_ALIGNMENT  4096
 #define ALIGN_UP(x,size) ( ((size_t)x+(size-1))&(~(size-1)) )
 
