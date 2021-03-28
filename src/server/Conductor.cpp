@@ -45,35 +45,43 @@ void Conductor::conduct(std::shared_ptr<Command> cmd) {
 }
 
 void Conductor::do_cudamalloc(const std::shared_ptr<Command>& cmd) {
+    std::cout << __FUNCTION__ << " size: " << cmd->get_msg<CudaMallocMsg>()->size << std::endl;
     void *dev_ptr;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     cudaCheck(::cudaMalloc(&dev_ptr, cmd->get_msg<CudaMallocMsg>()->size));
+    std::cout << __FUNCTION__ << " address: " << dev_ptr << std::endl;
     cmd->finish<void *>(dev_ptr);
 }
 
 void Conductor::do_cudamallochost(const std::shared_ptr<Command>& cmd) {
+    std::cout << __FUNCTION__ << " size: " << cmd->get_msg<CudaMallocHostMsg>()->size << std::endl;
     auto msg = cmd->get_msg<CudaMallocHostMsg>();
     key_t shm_key = ftok("./", 0x1);
+    std::cout << __FUNCTION__ << " shm_key: " << shm_key << std::endl;
     int shm_id = shmget(shm_key, msg->size, IPC_CREAT);
     if(shm_id < 0){
         perror("fail to shmget");
         exit(1);
     } else {
-        std::cout << "create share memory id: " << shm_id << std::endl;
+        std::cout << __FUNCTION__ << " shm_id: " << shm_id << std::endl;
     }
     void * host_ptr = shmat(shm_id, NULL, 0);
+    std::cout << __FUNCTION__  << " share memory address: " << host_ptr << std::endl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
 }
 
 void Conductor::do_cudafree(const std::shared_ptr<Command>& cmd) {
+    std::cout << __FUNCTION__ << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr << std::endl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
-    cudaCheck(::cudaFree(cmd->get_msg<CudaFreeMsg>()->devPtr));
+    auto dev_ptr = cmd->get_msg<CudaFreeMsg>()->devPtr;
+    cudaCheck(::cudaFree(dev_ptr));
     cmd->finish<bool>(true);
 }
 
 void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
+    std::cout << __FUNCTION__ << " free: " << cmd->get_msg<CudaFreeHostMsg>()->ptr << std::endl;
     auto host_ptr = cmd->get_msg<CudaFreeHostMsg>()->ptr;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     cudaCheck(::cudaHostUnregister(host_ptr))
@@ -81,6 +89,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
 }
 
 void Conductor::do_cudamemset(const std::shared_ptr<Command>& cmd) {
+    std::cout << __FUNCTION__ << " set address: " << cmd->get_msg<CudaMemsetMsg>()->devPtr << std::endl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemsetMsg>();
     cudaCheck(::cudaMemset(msg->devPtr, msg->value, msg->count));
@@ -90,6 +99,7 @@ void Conductor::do_cudamemset(const std::shared_ptr<Command>& cmd) {
 void Conductor::do_cudamemcpy(const std::shared_ptr<Command>& cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemcpyMsg>();
+    std::cout << __FUNCTION__ << " copy from: " << msg->src << " to: " << msg->dst << std::endl;
     cudaCheck(::cudaMemcpy(msg->dst, msg->src, msg->count, msg->kind));
     cmd->finish<bool>(true);
 }

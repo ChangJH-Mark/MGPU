@@ -62,14 +62,6 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
         case MSG_CUDA_LAUNCH_KERNEL:
             push_command(static_cast<AbMsg *>(msg), socket);
             break;
-//        case MSG_CUDA_MALLOC: {
-//            push_command(static_cast<CudaMallocMsg*>(msg), socket);
-//            break;
-//        }
-//        case MSG_CUDA_MALLOC_HOST: {
-//            push_command(static_cast<CudaMallocHostMsg*>(msg), socket);
-//            break;
-//        }
         default:
             std::cerr << "fail to recognize message!" << std::endl;
     }
@@ -90,14 +82,9 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     auto mtx = server->task_map[msg->key].first;
     auto list = server->task_map[msg->key].second;
     mtx->lock();
+    std::cout << "push command: type: " << msg->type << std::endl;
     list->push_back(make_shared<Command>(msg, cli));
     mtx->unlock();
-    std::cout << "now command map p_size is " << server->task_map.size() << std::endl;
-    for(auto m : server->task_map){
-        std::cout << "pid : " << (m.first >> 16) << std::endl;
-        std::cout << "key : " << (m.first) << std::endl;
-        std::cout << "list p_size: " << (m.second.second->size()) << std::endl;
-    }
     server->map_mtx.unlock();
 }
 

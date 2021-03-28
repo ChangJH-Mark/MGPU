@@ -6,7 +6,7 @@
 #include <chrono>
 #include "client/api.h"
 
-#define N (1 << 24)
+#define N (10000)
 
 using namespace std;
 
@@ -14,12 +14,13 @@ int main() {
     void * dev_ptr1 = mgpu::cudaMalloc(N);
     void * dev_ptr2 = mgpu::cudaMalloc(N);
     mgpu::cudaMemset(dev_ptr1, 0x1, N);
-    mgpu::cudaMemset(dev_ptr2, 0x0, N);
+    mgpu::cudaMemset(dev_ptr2, 0x2, N);
     void * host_ptr = mgpu::cudaMallocHost(N);
-    printf("%x", host_ptr);
-    mgpu::cudaLaunchKernel({{1024},{1024}, 0, 0}, "vecAdd", dev_ptr1, dev_ptr2, N);
-    sleep(5);
-    mgpu::cudaMemcpy(host_ptr, dev_ptr2, 10, cudaMemcpyDeviceToHost);
+    printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n",dev_ptr1, dev_ptr2, host_ptr);
+    mgpu::cudaLaunchKernel({{1},{1024}, 0, 0}, "vecAdd", dev_ptr1, dev_ptr2, N);
+    sleep(10);
+    mgpu::cudaMemcpy(host_ptr, dev_ptr2, N, cudaMemcpyDeviceToHost);
+    printf("0x%x\n", *(int*)host_ptr);
     mgpu::cudaFree(dev_ptr1);
     mgpu::cudaFree(dev_ptr2);
     mgpu::cudaFreeHost(host_ptr);

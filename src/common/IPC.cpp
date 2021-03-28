@@ -59,7 +59,9 @@ void IPCClient::socket_send(uint cli, void *msg, size_t size, uint flag, const c
 }
 
 void IPCClient::socket_recv(uint cli, void *dst, size_t size, uint flag, const char *err_msg) {
-    if(size != ::recv(cli, dst, size, flag)) {
+    uint recved;
+    if(size != (recved = ::recv(cli, dst, size, flag))) {
+        printf("want %d bytes, got %d bytes\n", size, recved);
         perror(err_msg);
         exit(1);
     }
@@ -89,9 +91,9 @@ void* IPCClient::send(CudaMallocHostMsg *msg) {
 
 bool IPCClient::send(CudaFreeMsg *msg) {
     auto cli = connect();
-    socket_send(cli, msg, sizeof(CudaFreeMsg), 0, "fail to send cudaMallocHost message");
+    socket_send(cli, msg, sizeof(CudaFreeMsg), 0, "fail to send cudaFree message");
     bool ret;
-    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMallocHost return");
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaFree return");
     std::async(&IPCClient::socket_clear, this, cli);
     return ret;
 }
@@ -129,7 +131,7 @@ bool IPCClient::send(CudaMemcpyMsg *msg) {
 
 bool IPCClient::send(CudaLaunchKernelMsg *msg) {
     auto cli = connect();
-    socket_send(cli, msg, sizeof(CudaLaunchKernelMsg), 0, "fail to send cudaLaunchKerenl message");
+    socket_send(cli, msg, sizeof(CudaLaunchKernelMsg), 0, "fail to send cudaLaunchKernel message");
     bool ret;
     socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaLaunchKernel return");
     std::async(&IPCClient::socket_clear, this, cli);
