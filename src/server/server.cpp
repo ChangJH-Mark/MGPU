@@ -3,34 +3,40 @@
 //
 #include "server/server.h"
 #include <functional>
+
 using namespace mgpu;
 
-Server* Server::single_instance = nullptr;
+Server *Server::single_instance = nullptr;
 
-Server* mgpu::get_server() {
-    if(Server::single_instance != nullptr){
+Server *mgpu::get_server() {
+    if (Server::single_instance != nullptr) {
         return Server::single_instance;
     }
 
     auto server = new Server;
     Server::single_instance = server;
-    server->mod["device"] = make_shared<Device>();
-    server->mod["scheduler"] = make_shared<Scheduler>();
-    server->mod["receiver"] = make_shared<Receiver>();
-    server->mod["conductor"] = make_shared<Conductor>();
-    for(const auto& m : server->mod) {
+    server->device = make_shared<Device>();
+    server->scheduler = make_shared<Scheduler>();
+    server->receiver = make_shared<Receiver>();
+    server->conductor = make_shared<Conductor>();
+
+    server->mod["device"] = server->device;
+    server->mod["scheduler"] = server->scheduler;
+    server->mod["receiver"] = server->receiver;
+    server->mod["conductor"] = server->conductor;
+    for (const auto &m : server->mod) {
         m.second->init();
     }
 
-    for(const auto& m : server->mod){
+    for (const auto &m : server->mod) {
         m.second->run();
     }
     return Server::single_instance;
 }
 
 void Server::join() {
-    for(const auto& m : this->mod) {
-        if(m.second->joinable){
+    for (const auto &m : this->mod) {
+        if (m.second->joinable) {
             m.second->join();
         }
     }
@@ -39,9 +45,9 @@ void Server::join() {
 
 void mgpu::destroy_server() {
     auto server = Server::single_instance;
-    if(server == nullptr)
+    if (server == nullptr)
         return;
-    for(const auto& m : server->mod) {
+    for (const auto &m : server->mod) {
         m.second->destroy();
     }
 }

@@ -11,7 +11,7 @@
 #include "mod.h"
 #include "common/message.h"
 #include "commands.h"
-#include "server.h"
+#include "server/server.h"
 
 namespace mgpu{
     class Receiver : public Module {

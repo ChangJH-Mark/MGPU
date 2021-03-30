@@ -14,10 +14,31 @@ void mgpu::Device::init() {
         std::cerr << "no GPU availiable, please check again! " << std::endl;
         exit(EXIT_FAILURE);
     }
-    for(int i = 0; i < num; i++){
+    // loop for every gpu
+    for(int dev = 0; dev < num; dev++){
+        ::cudaSetDevice(dev);
+        ::cudaSetDeviceFlags(cudaDeviceBlockingSync | cudaDeviceMapHost);
         auto gpu = new GPU;
-        init_gpu(gpu, i);
+        init_gpu(gpu, dev);
         gpu_list.push_back(gpu);
+        std::array<cudaStream_t*, MAX_STREAMS> streams{};
+        for(int j = 0; j < MAX_STREAMS; j++){
+            streams[j] = new cudaStream_t;
+            cudaCheck(cudaStreamCreate(streams[j]));
+            std::cout << __FUNCTION__ << " create device: " << dev << " stream: " << j << " ptr: " << *(streams[j]) << std::endl;
+        }
+        gpu_streams[dev] = streams;
+    }
+}
+
+void mgpu::Device::destroy() {
+    for(auto item : gpu_list){
+        delete item;
+    }
+    for(auto item : gpu_streams) {
+        for(auto stream : item.second) {
+            delete stream;
+        }
     }
 }
 

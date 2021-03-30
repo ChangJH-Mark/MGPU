@@ -14,6 +14,31 @@
 #define MSG_CUDA_MEMSET 0x5
 #define MSG_CUDA_MEMCPY 0x6
 #define MSG_CUDA_LAUNCH_KERNEL 0x7
+#define MSG_CUDA_STREAM_CREATE 0x8
+#define MSG_CUDA_STREAM_SYNCHRONIZE 0x9
+
+inline const char *get_type_msg(uint type) {
+    switch (type) {
+        case MSG_CUDA_MALLOC :
+            return " __cuda_malloc__ ";
+        case MSG_CUDA_MALLOC_HOST :
+            return " __cuda_malloc_host__ ";
+        case MSG_CUDA_FREE :
+            return " __cuda_free__ ";
+        case MSG_CUDA_FREE_HOST :
+            return " __cuda_free_host__ ";
+        case MSG_CUDA_MEMSET :
+            return " __cuda_memset__ ";
+        case MSG_CUDA_MEMCPY :
+            return " __cuda_memcpy__ ";
+        case MSG_CUDA_LAUNCH_KERNEL :
+            return " __cuda_launch_kernel__ ";
+        case MSG_CUDA_STREAM_CREATE :
+            return " __cuda_stream_create__ ";
+        case MSG_CUDA_STREAM_SYNCHRONIZE :
+            return " __cuda_stream_synchronize__ ";
+    }
+}
 
 namespace mgpu {
     typedef struct config {
@@ -24,6 +49,7 @@ namespace mgpu {
     } config;
 
     typedef uint msg_t;
+    typedef int stream_t;
 
     typedef struct {
     public:
@@ -59,6 +85,13 @@ namespace mgpu {
         size_t count;
         cudaMemcpyKind kind;
     } CudaMemcpyMsg;
+
+    typedef struct CudaStreamCreateMsg : public AbMsg {
+        uint num; // streams num
+    } CudaStreamCreateMsg;
+
+    typedef struct CudaStreamSyncMsg : public AbMsg {
+    } CudaStreamSynchronize;
 
     typedef struct CudaLaunchKernelMsg : public AbMsg {
         config conf;

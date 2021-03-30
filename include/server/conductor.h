@@ -21,9 +21,10 @@ namespace mgpu {
         virtual void join() override{};
 
     public:
-        void conduct(std::shared_ptr<Command> cmd);
+        std::shared_ptr<bool> conduct(std::shared_ptr<Command> cmd);
 
     private:
+        cudaStream_t get_stream(uint device, uint key);
         void do_cudamalloc(const std::shared_ptr<Command>& cmd);
         void do_cudamallochost(const std::shared_ptr<Command>& cmd);
         void do_cudafree(const std::shared_ptr<Command>& cmd);
@@ -31,6 +32,8 @@ namespace mgpu {
         void do_cudamemset(const std::shared_ptr<Command>& cmd);
         void do_cudamemcpy(const std::shared_ptr<Command>& cmd);
         void do_cudalaunchkernel(const std::shared_ptr<Command>& cmd);
+        void do_cudastreamcreate(const std::shared_ptr<Command>& cmd);
+        void do_cudastreamsynchronize(const std::shared_ptr<Command>& cmd);
     };
 }
 #endif //FASTGPU_CONDUCTOR_H

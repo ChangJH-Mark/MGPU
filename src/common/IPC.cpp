@@ -138,6 +138,23 @@ bool IPCClient::send(CudaLaunchKernelMsg *msg) {
     return ret;
 }
 
+bool IPCClient::send(CudaStreamCreateMsg *msg, int * streams) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaStreamCreateMsg), 0, "fail to send cudaStreamCreate message");
+    socket_recv(cli, streams, msg->num * sizeof(int), 0, "error to receive cudaStreamCreate return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return true;
+}
+
+bool IPCClient::send(CudaStreamSyncMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaStreamSyncMsg), 0, "fail to send cudaStreamSynchronize message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(bool), 0, "error to receive cudaStreamSynchronize return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
 IPCClient::~IPCClient() {
 }
 

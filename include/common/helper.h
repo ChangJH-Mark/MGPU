@@ -10,7 +10,7 @@
 using namespace std;
 
 #define cudaCheck(x) if((x)!=cudaSuccess) { \
-cerr << "cuda error: " << x << " message: " << cudaGetErrorString(x) << endl; \
+cerr << __FUNCTION__ <<" cuda error: " << x << " message: " << cudaGetErrorString(x) << endl; \
 exit(EXIT_FAILURE);\
 }
 #endif //FASTGPU_HELPER_H

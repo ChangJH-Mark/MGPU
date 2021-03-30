@@ -12,7 +12,7 @@
 namespace mgpu {
     class Command {
     public:
-        Command(AbMsg* m, uint cli) : type(m->type), msg(m), socket(cli), device(0) {}
+        Command(AbMsg* m, uint cli) : type(m->type), msg(m), socket(cli), device(0), status(std::make_shared<bool>(false)) {}
         Command(const Command &) = delete;
         Command(Command &&origin)  noexcept {
             socket = origin.socket;
@@ -24,11 +24,15 @@ namespace mgpu {
         }
 
     public:
+        std::shared_ptr<bool> get_status() {return status;}
         msg_t get_type() const{ return type;}
         uint get_device() const{ return device;}
         template<class T> T* get_msg() { return (T*)msg;}
         template<class T> void finish(T);
+        template<class T> void finish(T*, uint);
 
+    private:
+        std::shared_ptr<bool> status;
     private:
         uint socket;
         msg_t type;
@@ -40,6 +44,14 @@ namespace mgpu {
     void Command::finish(T value) {
         ::send(socket, &value, sizeof(T), 0);
         ::close(socket);
+        *status = true;
+    }
+
+    template<typename T>
+    void Command::finish(T* ptr, uint num) {
+        ::send(socket, ptr, sizeof(T) * num, 0);
+        ::close(socket);
+        *status = true;
     }
 }
 

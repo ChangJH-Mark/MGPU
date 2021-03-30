@@ -12,7 +12,7 @@ void Scheduler::init() {
 
 void Scheduler::run() {
     auto server = mgpu::get_server();
-    this->conductor = dynamic_pointer_cast<Conductor>(server->mod["conductor"]);
+    this->conductor = server->get_conductor();
     this->scanner = std::move(std::thread(&Scheduler::do_scan, this));
     auto handler = this->scanner.native_handle();
     pthread_setname_np(handler, "Scheduler");
@@ -28,15 +28,24 @@ void Scheduler::do_scan() {
             // socket_clear empty list
             if(iter->second.second->empty())
             {
+                server->available_map.erase(iter->first);
                 server->task_map.erase(iter++);
                 continue;
             }
             auto mtx = iter->second.first;
             auto list = iter->second.second;
             lock_guard<std::mutex> list_guard(*mtx);
+            if(server->available_map.count(iter->first) > 0)
+            {
+                if(!server->available_map[iter->first].get()){
+                    iter++;
+                    continue;
+                }
+                server->available_map.erase(iter->first);
+            }
             shared_ptr<Command> cmd = list->front();
             list->pop_front();
-            conductor->conduct(cmd);
+            server->available_map[iter->first] = conductor->conduct(cmd);
             ++iter;
         }
         server->map_mtx.unlock();

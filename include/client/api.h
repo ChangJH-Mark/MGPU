@@ -39,6 +39,13 @@ namespace mgpu {
     // copy @count bytes from @src to @dst, use @kind distinguish cpyD2H, cpyD2D, cpyH2D, cpyH2H
     bool cudaMemcpy(void *dst, const void *src, size_t count, ::cudaMemcpyKind kind);
 
+    // communicate with server, call cudaStreamCreate
+    // create @num streams and save handler in @streams
+    bool cudaStreamCreate(stream_t * streams, uint num);
+
+    // communicate with server, call cudaStreamSynchronize on @stream
+    bool cudaStreamSynchronize(stream_t stream);
+
     // communicate with server, start kernel with @conf set @param
     template<typename T, typename... Args>
     static unsigned fillParameters(char *buff, unsigned offset, T value, Args... args);
@@ -47,12 +54,9 @@ namespace mgpu {
     static unsigned fillParameters(char *buff, unsigned offset, T value);
 
     template<typename... Args>
-    bool cudaLaunchKernel(config conf, const char * name, Args... args);
-
-    template<typename... Args>
     bool cudaLaunchKernel(config conf, const char* name, Args... args) {
         auto ipc_cli = IPCClient::get_client();
-        CudaLaunchKernelMsg msg{MSG_CUDA_LAUNCH_KERNEL, uint(pid << 16) + 0xffff, conf};
+        CudaLaunchKernelMsg msg{MSG_CUDA_LAUNCH_KERNEL, uint(pid << 16) + conf.stream, conf};
         strcpy(msg.name, name);
         msg.p_size = fillParameters(msg.param, 0, args...);
         return ipc_cli->send(&msg);

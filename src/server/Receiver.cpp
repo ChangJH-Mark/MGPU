@@ -60,6 +60,8 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
         case MSG_CUDA_MEMSET:
         case MSG_CUDA_MEMCPY:
         case MSG_CUDA_LAUNCH_KERNEL:
+        case MSG_CUDA_STREAM_CREATE:
+        case MSG_CUDA_STREAM_SYNCHRONIZE:
             push_command(static_cast<AbMsg *>(msg), socket);
             break;
         default:
@@ -82,7 +84,7 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     auto mtx = server->task_map[msg->key].first;
     auto list = server->task_map[msg->key].second;
     mtx->lock();
-    std::cout << "push command: type: " << msg->type << std::endl;
+    std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << std::endl;
     list->push_back(make_shared<Command>(msg, cli));
     mtx->unlock();
     server->map_mtx.unlock();
