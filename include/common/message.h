@@ -95,9 +95,10 @@ namespace mgpu {
 
     typedef struct CudaLaunchKernelMsg : public AbMsg {
         config conf;
-        char name[128]; // ptx name
-        size_t p_size;    // param p_size
+        char ptx[128]; // ptx ptx
+        char kernel[128]; // kernel symbol
         char param[1024]; // save parameters
+        size_t p_size;    // param p_size
     } CudaLaunchKernelMsg;
 }
 

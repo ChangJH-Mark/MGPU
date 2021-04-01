@@ -133,16 +133,16 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaLaunchKernelMsg>();
     CUmodule cuModule;
-    cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, "/opt/custom/ptx/vecAdd.cubin")));
+    cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, msg->ptx)));
     CUfunction vecAdd;
-    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&vecAdd, cuModule, "vecAdd")));
+    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&vecAdd, cuModule, msg->kernel)));
     void * extra[] = {
             CU_LAUNCH_PARAM_BUFFER_POINTER, msg->param,
             CU_LAUNCH_PARAM_BUFFER_SIZE, &(msg->p_size),
             CU_LAUNCH_PARAM_END
     };
-    std::cout << __FUNCTION__ << " launch kernel at : device : " << cmd->get_device() << " stream: "
-              << key2stream(msg->key) << " cudaStream_t : "
+    std::cout << __FUNCTION__ << " launch from ptx" << msg->ptx << " kernel: " << msg->kernel << " at : device : "
+              << cmd->get_device() << " stream: " << key2stream(msg->key) << " cudaStream_t : "
               << get_stream(cmd->get_device(), msg->key) << std::endl;
     cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(vecAdd, msg->conf.grid.x, 1, 1,
                                                         msg->conf.block.x, 1, 1,

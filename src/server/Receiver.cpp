@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <iostream>
+#define MAX_MSG_SIZE (1 << 12) // 4KB
 
 using namespace mgpu;
 
@@ -48,8 +49,8 @@ void Receiver::run() {
 }
 
 void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
-    auto msg = (void *)malloc(256);
-    auto size = recv(socket, msg, 256, 0);
+    auto msg = (void *)malloc(MAX_MSG_SIZE);
+    auto size = recv(socket, msg, MAX_MSG_SIZE, 0);
     *((char*)msg + size) = 0;
     msg_t type = *(msg_t*)msg;
     switch (type) {

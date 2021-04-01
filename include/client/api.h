@@ -54,10 +54,11 @@ namespace mgpu {
     static unsigned fillParameters(char *buff, unsigned offset, T value);
 
     template<typename... Args>
-    bool cudaLaunchKernel(config conf, const char* name, Args... args) {
+    bool cudaLaunchKernel(config conf, const char* name, const char* kernel, Args... args) {
         auto ipc_cli = IPCClient::get_client();
         CudaLaunchKernelMsg msg{MSG_CUDA_LAUNCH_KERNEL, uint(pid << 16) + conf.stream, conf};
-        strcpy(msg.name, name);
+        strcpy(msg.ptx, name);
+        strcpy(msg.kernel, kernel);
         msg.p_size = fillParameters(msg.param, 0, args...);
         return ipc_cli->send(&msg);
     }

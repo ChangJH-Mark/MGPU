@@ -20,7 +20,7 @@ int main() {
     mgpu::cudaStreamCreate(&streams, 1);
     printf("stream: %d\n", streams);
     printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n",dev_ptr1, dev_ptr2, host_ptr);
-    mgpu::cudaLaunchKernel({{1},{1024}, 0, streams}, "vecAdd", dev_ptr1, dev_ptr2, N / sizeof(int));
+    mgpu::cudaLaunchKernel({{1},{1024}, 0, streams}, "/opt/custom/ptx/vecAdd.ptx", "vecAdd", dev_ptr1, dev_ptr2, N / sizeof(int));
     mgpu::cudaStreamSynchronize(streams);
     mgpu::cudaMemcpy(host_ptr, dev_ptr2, N, cudaMemcpyDeviceToHost);
     printf("0x%x\n", *((int*)host_ptr + (N-sizeof(int )) / sizeof(int )));
