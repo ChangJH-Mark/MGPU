@@ -10,6 +10,24 @@
 
 using namespace std;
 
+void test_sm() {
+    uint block_num = 10;
+    uint size = sizeof(block_num) * block_num;
+    void * dev_ptr1 = mgpu::cudaMalloc(size);
+    void * host_ptr1 = mgpu::cudaMallocHost(size);
+    mgpu::stream_t stream;
+    mgpu::cudaStreamCreate(&stream, 1);
+    mgpu::cudaLaunchKernel({{block_num},{1}, 0, stream}, "/opt/custom/ptx/specify_sm.ptx", "sm_ids", dev_ptr1);
+    mgpu::cudaStreamSynchronize(stream);
+    mgpu::cudaMemcpy(host_ptr1, dev_ptr1, size, cudaMemcpyDeviceToHost);
+    for(int i=0; i<block_num; i++){
+        printf("%d ", *((int*)(host_ptr1) + i));
+    }
+    printf("\n");
+    mgpu::cudaFree(dev_ptr1);
+    mgpu::cudaFreeHost(host_ptr1);
+}
+
 int main() {
     void * dev_ptr1 = mgpu::cudaMalloc(N);
     void * dev_ptr2 = mgpu::cudaMalloc(N);
@@ -27,5 +45,6 @@ int main() {
     mgpu::cudaFree(dev_ptr1);
     mgpu::cudaFree(dev_ptr2);
     mgpu::cudaFreeHost(host_ptr);
+    test_sm();
     return 0;
 }
