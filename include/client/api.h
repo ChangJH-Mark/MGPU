@@ -9,6 +9,7 @@
 #include <cuda_runtime.h>
 #include "common/message.h"
 #include "common/IPC.h"
+#include "common/helper.h"
 
 namespace mgpu {
 
@@ -47,12 +48,6 @@ namespace mgpu {
     bool cudaStreamSynchronize(stream_t stream);
 
     // communicate with server, start kernel with @conf set @param
-    template<typename T, typename... Args>
-    static unsigned fillParameters(char *buff, unsigned offset, T value, Args... args);
-
-    template<typename T>
-    static unsigned fillParameters(char *buff, unsigned offset, T value);
-
     template<typename... Args>
     bool cudaLaunchKernel(config conf, const char* name, const char* kernel, Args... args) {
         auto ipc_cli = IPCClient::get_client();
@@ -61,23 +56,6 @@ namespace mgpu {
         strcpy(msg.kernel, kernel);
         msg.p_size = fillParameters(msg.param, 0, args...);
         return ipc_cli->send(&msg);
-    }
-
-    template<typename T, typename... Args>
-    static unsigned fillParameters(char *buff, unsigned offset, T value, Args... args)
-    {
-        offset = (offset + __alignof(value) -1) & ~(__alignof(value) -1);
-        memcpy((buff + offset), &value, sizeof(value));
-        offset += sizeof(value);
-        return fillParameters(buff, offset, args...);
-    }
-
-    template<typename T>
-    static unsigned fillParameters(char *buff, unsigned int offset, T value) {
-        offset = (offset + __alignof(value) -1) & ~(__alignof(value) -1);
-        memcpy((buff + offset), &value, sizeof(value));
-        offset += sizeof(value);
-        return offset;
     }
 }
 #endif //FASTGPU_API_H

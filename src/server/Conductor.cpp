@@ -6,10 +6,12 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <string>
 #include "server/server.h"
 #include "server/conductor.h"
 #include "common/helper.h"
 #define MAX_STREAMS 32
+#define WORKER_GRID 60
 #define key2stream(key) (((key) >> 16 + (key) & 0xffff) % MAX_STREAMS)
 
 using namespace mgpu;
@@ -135,7 +137,9 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     CUmodule cuModule;
     cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, msg->ptx)));
     CUfunction vecAdd;
-    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&vecAdd, cuModule, msg->kernel)));
+    std::cout << (string(msg->kernel) + "Proxy").c_str() << std::endl;
+    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&vecAdd, cuModule, (string(msg->kernel) + "Proxy").c_str())));
+    msg->p_size = fillParameters(msg->param, msg->p_size, 1, 2, msg->conf.grid, (msg->conf.grid.x));
     void * extra[] = {
             CU_LAUNCH_PARAM_BUFFER_POINTER, msg->param,
             CU_LAUNCH_PARAM_BUFFER_SIZE, &(msg->p_size),
@@ -144,8 +148,8 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " launch from ptx" << msg->ptx << " kernel: " << msg->kernel << " at : device : "
               << cmd->get_device() << " stream: " << key2stream(msg->key) << " cudaStream_t : "
               << get_stream(cmd->get_device(), msg->key) << std::endl;
-    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(vecAdd, msg->conf.grid.x, 1, 1,
-                                                        msg->conf.block.x, 1, 1,
+    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(vecAdd, WORKER_GRID, 1, 1,
+                                                        msg->conf.block.x, msg->conf.block.y, msg->conf.block.z,
                                                         msg->conf.share_memory,
                                                         get_stream(cmd->get_device(), msg->key),
                                                         NULL, extra)));

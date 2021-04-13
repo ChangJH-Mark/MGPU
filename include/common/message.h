@@ -42,10 +42,10 @@ inline const char *get_type_msg(uint type) {
 
 namespace mgpu {
     typedef struct config {
-        dim3 grid;
-        dim3 block;
-        int share_memory;
-        int stream;
+        dim3 grid {1, 1, 1};
+        dim3 block {1, 1, 1};
+        int share_memory {0};
+        int stream {0};
     } config;
 
     typedef uint msg_t;
