@@ -48,7 +48,7 @@ namespace mgpu {
     private: // mgpu-Streams
         std::mutex map_mtx;
         std::map<uint, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>> task_map; // key: pid << 16 + stream, value: <mutex, CmdList>
-        std::map<uint, shared_ptr<bool>> available_map;
+        std::map<uint, shared_ptr<bool>> available_map; // key: pid << 16 + stream, value: isStreamBlocked
 
         friend Server* get_server();
         friend void destroy_server();

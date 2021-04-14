@@ -10,6 +10,7 @@
 #include "server/server.h"
 #include "server/conductor.h"
 #include "common/helper.h"
+
 #define MAX_STREAMS 32
 #define WORKER_GRID 60
 #define key2stream(key) (((key) >> 16 + (key) & 0xffff) % MAX_STREAMS)
@@ -71,7 +72,7 @@ std::shared_ptr<bool> Conductor::conduct(std::shared_ptr<Command> cmd) {
     return cmd->get_status();
 }
 
-void Conductor::do_cudamalloc(const std::shared_ptr<Command>& cmd) {
+void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " size: " << cmd->get_msg<CudaMallocMsg>()->size << std::endl;
     void *dev_ptr;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
@@ -80,26 +81,26 @@ void Conductor::do_cudamalloc(const std::shared_ptr<Command>& cmd) {
     cmd->finish<void *>(dev_ptr);
 }
 
-void Conductor::do_cudamallochost(const std::shared_ptr<Command>& cmd) {
+void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " size: " << cmd->get_msg<CudaMallocHostMsg>()->size << std::endl;
     auto msg = cmd->get_msg<CudaMallocHostMsg>();
     key_t shm_key = ftok("./", msg->key >> 16);
     std::cout << __FUNCTION__ << " shm_key: " << hex << shm_key << dec << std::endl;
     int shm_id = shmget(shm_key, msg->size, IPC_CREAT);
-    if(shm_id < 0){
+    if (shm_id < 0) {
         perror("fail to shmget");
         exit(1);
     } else {
         std::cout << __FUNCTION__ << " shm_id: " << shm_id << std::endl;
     }
-    void * host_ptr = shmat(shm_id, NULL, 0);
-    std::cout << __FUNCTION__  << " share memory address: " << host_ptr << std::endl;
+    void *host_ptr = shmat(shm_id, NULL, 0);
+    std::cout << __FUNCTION__ << " share memory address: " << host_ptr << std::endl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
 }
 
-void Conductor::do_cudafree(const std::shared_ptr<Command>& cmd) {
+void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr << std::endl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto dev_ptr = cmd->get_msg<CudaFreeMsg>()->devPtr;
@@ -115,7 +116,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     cmd->finish<bool>(0 > shmdt(host_ptr));
 }
 
-void Conductor::do_cudamemset(const std::shared_ptr<Command>& cmd) {
+void Conductor::do_cudamemset(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " set address: " << cmd->get_msg<CudaMemsetMsg>()->devPtr << std::endl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemsetMsg>();
@@ -123,7 +124,7 @@ void Conductor::do_cudamemset(const std::shared_ptr<Command>& cmd) {
     cmd->finish<bool>(true);
 }
 
-void Conductor::do_cudamemcpy(const std::shared_ptr<Command>& cmd) {
+void Conductor::do_cudamemcpy(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemcpyMsg>();
     std::cout << __FUNCTION__ << " copy from: " << msg->src << " to: " << msg->dst << std::endl;
@@ -136,19 +137,23 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     auto msg = cmd->get_msg<CudaLaunchKernelMsg>();
     CUmodule cuModule;
     cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, msg->ptx)));
-    CUfunction vecAdd;
-    std::cout << (string(msg->kernel) + "Proxy").c_str() << std::endl;
-    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&vecAdd, cuModule, (string(msg->kernel) + "Proxy").c_str())));
-    msg->p_size = fillParameters(msg->param, msg->p_size, 1, 2, msg->conf.grid, (msg->conf.grid.x));
-    void * extra[] = {
+    CUfunction func;
+    cudaCheck(
+            static_cast<cudaError_t>(::cuModuleGetFunction(&func, cuModule, (string(msg->kernel) + "Proxy").c_str())));
+    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 2, msg->conf.grid,
+                                 (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
+    void *extra[] = {
             CU_LAUNCH_PARAM_BUFFER_POINTER, msg->param,
             CU_LAUNCH_PARAM_BUFFER_SIZE, &(msg->p_size),
             CU_LAUNCH_PARAM_END
     };
-    std::cout << __FUNCTION__ << " launch from ptx" << msg->ptx << " kernel: " << msg->kernel << " at : device : "
+    std::cout << __FUNCTION__ << " launch from ptx" << msg->ptx << " kernel: " << std::string(msg->kernel) + "Proxy"
+              << " at : device : "
               << cmd->get_device() << " stream: " << key2stream(msg->key) << " cudaStream_t : "
-              << get_stream(cmd->get_device(), msg->key) << std::endl;
-    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(vecAdd, WORKER_GRID, 1, 1,
+              << get_stream(cmd->get_device(), msg->key) << " gridDim " + to_string(msg->conf.grid.x) + " "
+              << to_string(msg->conf.grid.y) + " " << to_string(msg->conf.grid.z) + " "
+              << std::endl;
+    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1,
                                                         msg->conf.block.x, msg->conf.block.y, msg->conf.block.z,
                                                         msg->conf.share_memory,
                                                         get_stream(cmd->get_device(), msg->key),
@@ -159,21 +164,21 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaStreamCreateMsg>();
-    int * ret = new int[msg->num];
+    int *ret = new int[msg->num];
     auto server = get_server();
     std::lock_guard<std::mutex> streamCreateGuard(server->map_mtx);
     std::map<int, bool> used;
-    for(int i = 0; i < msg->num; i++) {
+    for (int i = 0; i < msg->num; i++) {
         bool found = false;
-        for(int stream = 1; stream <= MAX_STREAMS; stream++){
-            if(server->task_map.find(msg->key & 0x0000 + stream) == server->task_map.end() && !used[stream]){
+        for (int stream = 1; stream <= MAX_STREAMS; stream++) {
+            if (server->task_map.find(msg->key & 0x0000 + stream) == server->task_map.end() && !used[stream]) {
                 found = true;
                 ret[i] = stream;
                 used[stream] = true;
                 break;
             }
         }
-        if(!found){
+        if (!found) {
             cmd->finish<int>(ret, i + 1);
         }
     }
