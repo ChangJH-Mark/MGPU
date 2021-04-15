@@ -33,6 +33,7 @@ namespace mgpu {
         cudaStream_t *getStream(uint device, uint stream){
             return gpu_streams[device][stream];
         }
+        int counts() {return num;}
     public:
         Device() =default;
         void observe();

@@ -63,10 +63,11 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
         case MSG_CUDA_LAUNCH_KERNEL:
         case MSG_CUDA_STREAM_CREATE:
         case MSG_CUDA_STREAM_SYNCHRONIZE:
+        case MSG_MATRIX_MUL_GPU:
             push_command(static_cast<AbMsg *>(msg), socket);
             break;
         default:
-            std::cerr << "fail to recognize message!" << std::endl;
+            std::cerr << "fail to recognize message info!" << std::endl;
     }
     free(cli);
     free(len);

@@ -27,6 +27,7 @@ namespace mgpu {
         bool send(CudaLaunchKernelMsg*);
         bool send(CudaStreamCreateMsg*, int * streams);
         bool send(CudaStreamSyncMsg *msg);
+        std::future<void *> send(MatrixMulMsg *msg);
     public:
         ~IPCClient();
     private:

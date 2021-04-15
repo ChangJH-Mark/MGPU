@@ -54,3 +54,14 @@ bool mgpu::cudaStreamSynchronize(stream_t stream) {
     CudaStreamSyncMsg msg{MSG_CUDA_STREAM_SYNCHRONIZE, uint(pid << 16) + stream};
     return ipc_cli->send(&msg);
 }
+
+std::future<void*> mgpu::matrixMul_MGPU(Matrix A, Matrix B, LaunchConf launchConf) {
+    if(A.width != B.height)
+    {
+        perror("can't multi matrix");
+        exit(1);
+    }
+    auto ipc_cli = IPCClient::get_client();
+    MatrixMulMsg msg{MSG_MATRIX_MUL_GPU, uint(pid << 16) + 0xffff, A, B, launchConf};
+    return std::move(ipc_cli->send(&msg));
+}

@@ -68,6 +68,11 @@ std::shared_ptr<bool> Conductor::conduct(std::shared_ptr<Command> cmd) {
             worker.detach();
             break;
         }
+        case (MSG_MATRIX_MUL_GPU) : {
+            std::thread worker(&Conductor::do_matrixmultgpu, this, cmd);
+            worker.detach();
+            break;
+        }
     }// switch
     return cmd->get_status();
 }
@@ -84,10 +89,8 @@ void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " size: " << cmd->get_msg<CudaMallocHostMsg>()->size << std::endl;
     auto msg = cmd->get_msg<CudaMallocHostMsg>();
-    key_t shm_key = ftok("./", msg->key >> 16);
-    std::cout << __FUNCTION__ << " shm_key: " << hex << shm_key << dec << std::endl;
-    int shm_id = shmget(shm_key, msg->size, IPC_CREAT);
-    if (shm_id < 0) {
+    int shm_id;
+    if ((shm_id  = shmget(IPC_PRIVATE, msg->size, IPC_CREAT))< 0) {
         perror("fail to shmget");
         exit(1);
     } else {
@@ -192,4 +195,59 @@ void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {
               << key2stream(msg->key) << " cudaStream_t: " << get_stream(cmd->get_device(), msg->key) << std::endl;
     cudaCheck(::cudaStreamSynchronize(get_stream(cmd->get_device(), msg->key)));
     cmd->finish<bool>(true);
+}
+
+void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
+    auto msg = cmd->get_msg<MatrixMulMsg>();
+    Matrix A = msg->A;
+    Matrix B = msg->B;
+    auto conf = cmd->get_msg<MatrixMulMsg>()->conf;
+    int shm_id = shmget(IPC_PRIVATE, sizeof(float) * A.height * B.width, IPC_CREAT);
+    if(shm_id < 0)
+    {
+        perror("fail to shmget");
+        exit(1);
+    } else {
+        std::cout << __FUNCTION__ << " shm_id: " << shm_id << std::endl;
+    }
+    void * res = shmat(shm_id, NULL, 0);
+    cudaCheck(::cudaHostRegister(res, sizeof(float) * A.height * B.width, cudaHostRegisterDefault));
+
+    auto device = get_server()->get_device();
+    std::vector<cudaEvent_t> starts(device->counts());
+    std::vector<cudaEvent_t> ends(device->counts());
+
+    for(int i = 0; i < device->counts(); i++)
+    {
+        std::cout << __FUNCTION__ << " device: " << i << " do matrix multi " << std::endl;
+        cudaCheck(::cudaSetDevice(i));
+        cudaCheck(::cudaEventCreateWithFlags(&(starts[i]), cudaEventBlockingSync));
+        cudaCheck(::cudaEventCreateWithFlags(&(ends[i]), cudaEventBlockingSync));
+        void * dev_A, *dev_B, *dev_C;
+        cudaCheck(::cudaMalloc(&dev_A, sizeof(float) * A.height * A.width));
+        cudaCheck(::cudaMalloc(&dev_B, sizeof(float) * B.height * B.width));
+        cudaCheck(::cudaMalloc(&dev_C, sizeof(float) * A.height * B.width));
+        cudaEventRecord(starts[i], 0);
+        cudaMemcpyAsync(dev_A, A.data, A.height * A.width, cudaMemcpyHostToDevice, 0);
+        cudaMemcpyAsync(dev_B, B.data, B.height * B.width, cudaMemcpyHostToDevice, 0);
+        CUmodule module;
+        cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&module, "/opt/custom/ptx/matrixMul.ptx")));
+        CUfunction func;
+        cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&func, module, "matrixMulProxy")));
+        char params[1024];
+        auto p_size = fillParameters(params, 0, dev_C, dev_A, dev_B, A.width, B.width, 0,2, conf.grid, (conf.grid.x * conf.grid.y));
+        void *extra[] = {
+                CU_LAUNCH_PARAM_BUFFER_POINTER, params,
+                CU_LAUNCH_PARAM_BUFFER_SIZE, &p_size,
+                CU_LAUNCH_PARAM_END
+        };
+        cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1, conf.block.x, conf.block.y, conf.block.z, conf.share_memory, 0, NULL, extra)));
+        cudaCheck(::cudaMemcpyAsync(res, dev_C, sizeof(float)* A.height * B.width, cudaMemcpyDeviceToHost, 0));
+        cudaCheck(::cudaEventRecord(ends[i], 0));
+    }
+    for(int i = 0; i<device->counts();i++){
+        cudaCheck(::cudaEventSynchronize(ends[i]));
+    }
+    std::cout << __FUNCTION__ << " finish " << std::endl;
+    cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{res, shm_id});
 }

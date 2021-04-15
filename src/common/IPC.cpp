@@ -155,6 +155,22 @@ bool IPCClient::send(CudaStreamSyncMsg *msg) {
     return ret;
 }
 
+std::future<void*> IPCClient::send(MatrixMulMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(MatrixMulMsg), 0, "fail to send MatrixMulGPU message");
+    auto func = [cli, ipc = IPCClient::single_instance]() -> void * {
+        CudaMallocHostRet ret;
+        ipc->socket_recv(cli, &ret, sizeof(ret), 0, "error to receive MatrixMulGPU return");
+        ipc->socket_clear(cli);
+        if(ret.ptr != shmat(ret.shmid,ret.ptr, 0)) {
+            perror("share memory with different address");
+            return nullptr;
+        }
+        return ret.ptr;
+    };
+    return std::move(std::async(func));
+}
+
 IPCClient::~IPCClient() {
 }
 

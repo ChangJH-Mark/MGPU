@@ -7,12 +7,13 @@
 #include <stddef.h>
 #include <sys/socket.h>
 #include <cuda_runtime.h>
+#include <future>
 #include "common/message.h"
 #include "common/IPC.h"
 #include "common/helper.h"
 
 namespace mgpu {
-
+    // cudaApi
     struct config;
     // communicate with server, create @p_size streams
     // return created stream p_size, -1 on failure
@@ -49,7 +50,7 @@ namespace mgpu {
 
     // communicate with server, start kernel with @conf set @param
     template<typename... Args>
-    bool cudaLaunchKernel(config conf, const char* name, const char* kernel, Args... args) {
+    bool cudaLaunchKernel(LaunchConf conf, const char* name, const char* kernel, Args... args) {
         auto ipc_cli = IPCClient::get_client();
         CudaLaunchKernelMsg msg{MSG_CUDA_LAUNCH_KERNEL, uint(pid << 16) + conf.stream, conf};
         strcpy(msg.ptx, name);
@@ -57,5 +58,10 @@ namespace mgpu {
         msg.p_size = fillParameters(msg.param, 0, args...);
         return ipc_cli->send(&msg);
     }
+}
+namespace mgpu{
+    // multi GPU function
+    struct Matrix;
+    std::future<void*> matrixMul_MGPU(Matrix A, Matrix B, LaunchConf launchConf);
 }
 #endif //FASTGPU_API_H

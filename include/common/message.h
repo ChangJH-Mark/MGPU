@@ -16,6 +16,8 @@
 #define MSG_CUDA_LAUNCH_KERNEL 0x7
 #define MSG_CUDA_STREAM_CREATE 0x8
 #define MSG_CUDA_STREAM_SYNCHRONIZE 0x9
+#define FUNCTION_DEFINED_MASK_ 0x10000
+#define MSG_MATRIX_MUL_GPU (FUNCTION_DEFINED_MASK_ | 0x1)
 
 inline const char *get_type_msg(uint type) {
     switch (type) {
@@ -37,6 +39,8 @@ inline const char *get_type_msg(uint type) {
             return " __cuda_stream_create__ ";
         case MSG_CUDA_STREAM_SYNCHRONIZE :
             return " __cuda_stream_synchronize__ ";
+        case MSG_MATRIX_MUL_GPU:
+            return " __matrix_mul_gpu__ ";
     }
 }
 
@@ -46,7 +50,13 @@ namespace mgpu {
         dim3 block {1, 1, 1};
         int share_memory {0};
         int stream {0};
-    } config;
+    } LaunchConf;
+
+    typedef struct Matrix{
+        void * data;
+        int width;
+        int height;
+    } Matrix;
 
     typedef uint msg_t;
     typedef int stream_t;
@@ -94,12 +104,18 @@ namespace mgpu {
     } CudaStreamSynchronize;
 
     typedef struct CudaLaunchKernelMsg : public AbMsg {
-        config conf;
+        LaunchConf conf;
         char ptx[128]; // ptx ptx
         char kernel[128]; // kernel symbol
         char param[1024]; // save parameters
         size_t p_size;    // param p_size
     } CudaLaunchKernelMsg;
+
+    typedef struct MatrixMulMsg : public AbMsg {
+        Matrix A;
+        Matrix B;
+        LaunchConf conf;
+    } MatrixMulMsg;
 }
 
 namespace mgpu {
