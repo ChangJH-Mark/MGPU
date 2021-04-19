@@ -53,9 +53,9 @@ namespace mgpu {
     } LaunchConf;
 
     typedef struct Matrix{
-        void * data;
-        int width;
-        int height;
+        void * data = nullptr;
+        int width = 0;
+        int height = 0;
     } Matrix;
 
     typedef uint msg_t;

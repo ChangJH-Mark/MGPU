@@ -9,5 +9,5 @@ then
 	mkdir /opt/custom
 fi
 
-cmake -H. -Bbuild
+cmake -DCppUTILITY=ON -H. -Bbuild
 cmake --build build -- -j 12 

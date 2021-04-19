@@ -7,6 +7,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <string>
+#include <cassert>
 #include "server/server.h"
 #include "server/conductor.h"
 #include "common/helper.h"
@@ -228,20 +229,20 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
         cudaCheck(::cudaMalloc(&dev_B, sizeof(float) * B.height * B.width));
         cudaCheck(::cudaMalloc(&dev_C, sizeof(float) * A.height * B.width));
         cudaEventRecord(starts[i], 0);
-        cudaMemcpyAsync(dev_A, A.data, A.height * A.width, cudaMemcpyHostToDevice, 0);
-        cudaMemcpyAsync(dev_B, B.data, B.height * B.width, cudaMemcpyHostToDevice, 0);
+        cudaMemcpyAsync(dev_A, A.data, sizeof(float) * A.height * A.width, cudaMemcpyHostToDevice, 0);
+        cudaMemcpyAsync(dev_B, B.data, sizeof(float) * B.height * B.width, cudaMemcpyHostToDevice, 0);
         CUmodule module;
         cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&module, "/opt/custom/ptx/matrixMul.ptx")));
         CUfunction func;
         cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&func, module, "matrixMulProxy")));
         char params[1024];
-        auto p_size = fillParameters(params, 0, dev_C, dev_A, dev_B, A.width, B.width, 0,2, conf.grid, (conf.grid.x * conf.grid.y));
+        auto p_size = fillParameters(params, 0, static_cast<void*>(dev_C), static_cast<void*>(dev_A), static_cast<void*>(dev_B), A.width, B.width, 0,2, conf.grid, (conf.grid.x * conf.grid.y));
         void *extra[] = {
                 CU_LAUNCH_PARAM_BUFFER_POINTER, params,
                 CU_LAUNCH_PARAM_BUFFER_SIZE, &p_size,
                 CU_LAUNCH_PARAM_END
         };
-        cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1, conf.block.x, conf.block.y, conf.block.z, conf.share_memory, 0, NULL, extra)));
+        cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1, conf.block.x, conf.block.y, conf.block.z, conf.share_memory, 0, nullptr, extra)));
         cudaCheck(::cudaMemcpyAsync(res, dev_C, sizeof(float)* A.height * B.width, cudaMemcpyDeviceToHost, 0));
         cudaCheck(::cudaEventRecord(ends[i], 0));
     }

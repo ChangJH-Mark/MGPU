@@ -1,7 +1,7 @@
 //
 // Created by root on 2021/4/13.
 //
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 16
 #define ITERS 10
 
 __device__ void matrixMul(float *C, float *A,
@@ -53,11 +53,12 @@ extern "C" __global__ void matrixMulProxy(float *C, float *A, float *B, int wA, 
             return;
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
-            if (leader) {
-                printf("worker block %d start do real block %d\n", blockIdx.x, i);
-            }
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
+            if (leader) {
+                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y, blockIDX.z);
+            }
             matrixMul(C, A, B, wA, wB, blockIDX, gridDIM);
+            __syncthreads();
         }
     }
 }

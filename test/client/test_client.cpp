@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <chrono>
+#include <assert.h>
 #include "client/api.h"
 
 using namespace std;
@@ -49,8 +50,8 @@ void test_vecAdd() {
 
 void test_matrixMul() {
     const int block_size = 16;
-    const int wA = block_size, hA = wA;
-    const int wB = block_size, hB = wA;
+    const int wA = 5 * 2 * block_size, hA = wA;
+    const int wB = 5 * 4 * block_size, hB = wA;
     void *h_A = mgpu::cudaMallocHost(sizeof(float) * wA * hA);
     void *h_B = mgpu::cudaMallocHost(sizeof(float) * wB * hB);
     for (int i = 0; i < wA * hA; i++)
@@ -94,22 +95,26 @@ void test_multiGPUmatrixMul() {
     const int wB = block_size, hB = wA;
     void *h_A = mgpu::cudaMallocHost(sizeof(float) * wA * hA);
     void *h_B = mgpu::cudaMallocHost(sizeof(float) * wB * hB);
+    // initial matrix
     for (int i = 0; i < wA * hA; i++)
         static_cast<float*>(h_A)[i] = 1.0f;
     for (int i = 0; i < wB * hB; i++)
         static_cast<float*>(h_B)[i] = 0.1f;
-    dim3 threads(block_size, block_size, 1);
-    dim3 grid(wB / threads.x, hA / threads.y, 1);
-    auto res = mgpu::matrixMul_MGPU({h_A, wA, hA}, {h_B, wB, hB}, {threads, grid});
+    dim3 threads(block_size, block_size);
+    dim3 grid(wB / threads.x, hA / threads.y);
+    auto res = mgpu::matrixMul_MGPU({h_A, wA, hA}, {h_B, wB, hB}, {grid, threads});
     auto value = static_cast<float*>(res.get());
     if(!value)
         exit(1);
     for(int i =0; i<hA; i++)
     {
-        for(int j = 0; j<wB; j++)
+        for(int j = 0; j<wB; j++) {
             cout << value[i * wA + j] << " ";
+        }
         cout << endl;
     }
+    mgpu::cudaFreeHost(h_A);
+    mgpu::cudaFreeHost(h_B);
 }
 
 int main() {
