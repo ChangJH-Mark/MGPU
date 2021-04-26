@@ -46,7 +46,7 @@ void mgpu::Device::init_gpu(GPU *gpu, uint id) {
     cudaDeviceProp dev_prop{};
     cudaCheck(cudaGetDeviceProperties(&dev_prop, id));
     gpu->ID = id;
-    gpu->max_blocks = dev_prop.maxBlocksPerMultiProcessor;
+    gpu->max_blocks = dev_prop.maxThreadsPerMultiProcessor;
     gpu->warp_size = dev_prop.warpSize;
     gpu->sms = dev_prop.multiProcessorCount;
     gpu->share_mem = dev_prop.sharedMemPerMultiprocessor;

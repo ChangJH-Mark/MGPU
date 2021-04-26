@@ -6,7 +6,7 @@ fi
 
 if [ ! -d /opt/custom ]
 then
-	mkdir /opt/custom
+	mkdir -p /opt/custom/ptx
 fi
 
 cmake -DCMAKE_BUILD_TYPE=DEBUG -DCppUTILITY=ON -H. -Bbuild

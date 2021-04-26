@@ -243,7 +243,8 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
                 CU_LAUNCH_PARAM_END
         };
         cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1, conf.block.x, conf.block.y, conf.block.z, conf.share_memory, 0, nullptr, extra)));
-        cudaCheck(::cudaMemcpyAsync(res, dev_C, sizeof(float)* A.height * B.width, cudaMemcpyDeviceToHost, 0));
+        int area = A.height * B.width / device->counts();
+        cudaCheck(::cudaMemcpyAsync(static_cast<float*>(res) + area * i, static_cast<float*>(dev_C) + area * i, sizeof(float) * area, cudaMemcpyDeviceToHost, 0));
         cudaCheck(::cudaEventRecord(ends[i], 0));
     }
     for(int i = 0; i<device->counts();i++){
