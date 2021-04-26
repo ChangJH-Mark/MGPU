@@ -8,17 +8,16 @@ if(POLICY CMP0104)
     set(CMAKE_CUDA_ARCHITECTURES 50)
 endif()
 
-link_directories(${CUDA_ROOT}/targets/x86_64-linux/lib/)
+set(CUDA_ROOT /usr/local/cuda)
+set(OUTPUT_ROOT /opt/custom)
+link_directories(${CUDA_ROOT}/lib64)
 aux_source_directory(src/server SERVER_SRCS)
 aux_source_directory(src/common COMMON_SRCS)
 add_executable(mgpu ${COMMON_SRCS} ${SERVER_SRCS} main.cc)
 add_library(client include/client/api.h src/api.cpp src/common/IPC.cpp include/common/message.h)
 
-set(OUTPUT_ROOT /opt/custom)
 set(EXECUTABLE_OUTPUT_PATH ${OUTPUT_ROOT}/bin)
 set(LIBRARY_OUTPUT_PATH ${OUTPUT_ROOT}/lib)
-
-set(CUDA_ROOT /usr/local/cuda-11.0)
 
 include_directories(./include ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 target_link_libraries(mgpu um pthread cudart cuda)
