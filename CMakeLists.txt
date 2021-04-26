@@ -14,7 +14,7 @@ link_directories(${CUDA_ROOT}/lib64)
 aux_source_directory(src/server SERVER_SRCS)
 aux_source_directory(src/common COMMON_SRCS)
 add_executable(mgpu ${COMMON_SRCS} ${SERVER_SRCS} main.cc)
-add_library(client include/client/api.h src/api.cpp src/common/IPC.cpp include/common/message.h)
+add_library(client include/client/api.h src/client/api.cpp src/common/IPC.cpp include/common/message.h)
 
 set(EXECUTABLE_OUTPUT_PATH ${OUTPUT_ROOT}/bin)
 set(LIBRARY_OUTPUT_PATH ${OUTPUT_ROOT}/lib)

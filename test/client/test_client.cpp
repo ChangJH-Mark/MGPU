@@ -119,7 +119,7 @@ void test_multiGPUmatrixMul() {
 
 int main() {
     //test_vecAdd();
-    //test_matrixMul();
+    test_matrixMul();
     test_multiGPUmatrixMul();
     //test_sm();
     return 0;

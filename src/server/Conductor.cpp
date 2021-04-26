@@ -98,7 +98,15 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
         std::cout << __FUNCTION__ << " shm_id: " << shm_id << std::endl;
     }
     void *host_ptr = shmat(shm_id, NULL, 0);
-    std::cout << __FUNCTION__ << " share memory address: " << host_ptr << std::endl;
+    if(!shms_id.count(host_ptr))
+    {
+        shms_id[host_ptr] = shm_id;
+        std::cout << __FUNCTION__ << " share memory address: " << host_ptr << std::endl;
+    } else {
+        std::cout << __FUNCTION__  << " share memory already exist shm_id : " << shms_id[host_ptr] << std::endl;
+        perror("fail to shmget");
+        exit(1);
+    }
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
@@ -117,7 +125,18 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     auto host_ptr = cmd->get_msg<CudaFreeHostMsg>()->ptr;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     cudaCheck(::cudaHostUnregister(host_ptr))
-    cmd->finish<bool>(0 > shmdt(host_ptr));
+    if(0 > shmdt(host_ptr))
+    {
+        perror("server fail to release share memory");
+        exit(1);
+    }
+    if(0 > shmctl(shms_id[host_ptr], IPC_RMID, NULL))
+    {
+        perror("server fail to delete share memory");
+        exit(1);
+    }
+    shms_id.erase(host_ptr);
+    cmd->finish<bool>(true);
 }
 
 void Conductor::do_cudamemset(const std::shared_ptr<Command> &cmd) {
@@ -212,6 +231,12 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
         std::cout << __FUNCTION__ << " shm_id: " << shm_id << std::endl;
     }
     void * res = shmat(shm_id, NULL, 0);
+    if (!shms_id.count(res)) {
+        shms_id[res] = shm_id;
+    } else {
+        perror("fail to shmat, address already used");
+        exit(1);
+    }
     cudaCheck(::cudaHostRegister(res, sizeof(float) * A.height * B.width, cudaHostRegisterDefault));
 
     auto device = get_server()->get_device();

@@ -86,7 +86,7 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     auto mtx = server->task_map[msg->key].first;
     auto list = server->task_map[msg->key].second;
     mtx->lock();
-    std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << std::endl;
+    std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << " from " << (msg->key >> 16) << std::endl;
     list->push_back(make_shared<Command>(msg, cli));
     mtx->unlock();
     server->map_mtx.unlock();
@@ -100,11 +100,13 @@ void Receiver::do_accept() {
         }
         auto cli = (struct sockaddr_un *)malloc(sizeof(struct sockaddr_un));
         auto len = (socklen_t*)malloc(sizeof(socklen_t));
+        *len = sizeof(sockaddr_un);
         auto conn_sock = accept(server_socket, (struct sockaddr*) cli, len);
         if(conn_sock < 0){
-            printf("fail to connect with client");
+            printf("fail to connect with client ret : %d errno : %d\n", conn_sock, errno);
             free(cli);
             free(len);
+            exit(EXIT_FAILURE);
         }
         std::thread worker(&Receiver::do_worker, this, conn_sock, (struct sockaddr*) cli, len);
         auto handler = worker.native_handle();

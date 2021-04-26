@@ -5,6 +5,7 @@
 #ifndef FASTGPU_CONDUCTOR_H
 #define FASTGPU_CONDUCTOR_H
 #include <future>
+#include <unordered_map>
 #include "server/commands.h"
 #include "mod.h"
 
@@ -22,6 +23,9 @@ namespace mgpu {
 
     public:
         std::shared_ptr<bool> conduct(std::shared_ptr<Command> cmd);
+
+    private:
+        std::unordered_map<void*, int> shms_id;
 
     private:
         cudaStream_t get_stream(uint device, uint key);
