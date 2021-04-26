@@ -1,4 +1,4 @@
-set(GENERAL_PTX_FLAG --generate-code arch=compute_50,code=sm_50 --ptx -odir=/opt/custom/ptx)
+set(GENERAL_PTX_FLAG --generate-code arch=compute_50,code=sm_50 --ptx -odir=${OUTPUT_ROOT}/ptx)
 add_custom_command(OUTPUT vecAdd.ptx specify_sm.ptx matrixMul.ptx
         COMMENT build vecAdd.ptx specify_sm.ptx matrixMul.ptx
         DEPENDS vecAdd.cu specify_sm.cu matrixMul.cu

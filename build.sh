@@ -9,5 +9,5 @@ then
 	mkdir /opt/custom
 fi
 
-cmake -DCppUTILITY=ON -H. -Bbuild
+cmake -DCMAKE_BUILD_TYPE=DEBUG -DCppUTILITY=ON -H. -Bbuild
 cmake --build build -- -j 12 
