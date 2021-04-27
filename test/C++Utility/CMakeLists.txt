@@ -1,2 +1,5 @@
-
-  add_executable(c++utility struct_initialize_test.cpp)
+if(${CppUTILITY})
+    add_executable(c++utility struct_initialize_test.cpp)
+else()
+    message("no cpp utility compiled")
+endif()
