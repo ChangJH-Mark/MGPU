@@ -38,6 +38,8 @@ namespace mgpu {
         void do_cudalaunchkernel(const std::shared_ptr<Command>& cmd);
         void do_cudastreamcreate(const std::shared_ptr<Command>& cmd);
         void do_cudastreamsynchronize(const std::shared_ptr<Command>& cmd);
+        void do_cudagetdevicecount(const std::shared_ptr<Command>& cmd);
+
         void do_matrixmultgpu(const std::shared_ptr<Command>& cmd);
     };
 }

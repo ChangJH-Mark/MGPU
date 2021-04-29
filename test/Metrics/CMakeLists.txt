@@ -1,4 +1,5 @@
 if(${BUILD_TEST})
+    # raw cuda program
     add_executable(pathfinder pathfinder/pathfinder.cu)
     target_link_libraries(pathfinder cudart)
 
@@ -18,3 +19,6 @@ if(${BUILD_TEST})
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/data
             DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)
 endif()
+
+# mgpu version
+add_subdirectory(mgpu_pathfinder)

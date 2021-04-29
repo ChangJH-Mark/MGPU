@@ -7,7 +7,6 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <string>
-#include <cassert>
 #include "server/server.h"
 #include "server/conductor.h"
 #include "common/helper.h"
@@ -66,6 +65,11 @@ std::shared_ptr<bool> Conductor::conduct(std::shared_ptr<Command> cmd) {
         }
         case (MSG_CUDA_STREAM_SYNCHRONIZE) : {
             std::thread worker(&Conductor::do_cudastreamsynchronize, this, cmd);
+            worker.detach();
+            break;
+        }
+        case (MSG_CUDA_GET_DEVICE_COUNT) : {
+            std::thread worker(&Conductor::do_cudagetdevicecount, this, cmd);
             worker.detach();
             break;
         }
@@ -215,6 +219,13 @@ void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {
               << key2stream(msg->key) << " cudaStream_t: " << get_stream(cmd->get_device(), msg->key) << std::endl;
     cudaCheck(::cudaStreamSynchronize(get_stream(cmd->get_device(), msg->key)));
     cmd->finish<bool>(true);
+}
+
+void Conductor::do_cudagetdevicecount(const std::shared_ptr<Command> &cmd) {
+    std::cout << __FUNCTION__ << " cuda get device count " << std::endl;
+    int count;
+    cudaCheck(::cudaGetDeviceCount(&count));
+    cmd->finish<int>(count);
 }
 
 void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {

@@ -18,6 +18,7 @@ namespace mgpu {
     public:
         static IPCClient* get_client();
         IPCClient& operator=(const IPCClient &) = delete;
+        int send(CudaGetDeviceCountMsg*);
         void * send(CudaMallocMsg*);
         void * send(CudaMallocHostMsg*);
         bool send(CudaFreeMsg*);

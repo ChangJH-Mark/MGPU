@@ -16,6 +16,7 @@
 #define MSG_CUDA_LAUNCH_KERNEL 0x7
 #define MSG_CUDA_STREAM_CREATE 0x8
 #define MSG_CUDA_STREAM_SYNCHRONIZE 0x9
+#define MSG_CUDA_GET_DEVICE_COUNT 0xa
 #define FUNCTION_DEFINED_MASK_ 0x10000
 #define MSG_MATRIX_MUL_GPU (FUNCTION_DEFINED_MASK_ | 0x1)
 
@@ -39,6 +40,8 @@ inline const char *get_type_msg(uint type) {
             return " __cuda_stream_create__ ";
         case MSG_CUDA_STREAM_SYNCHRONIZE :
             return " __cuda_stream_synchronize__ ";
+        case MSG_CUDA_GET_DEVICE_COUNT:
+            return " __cuda_get_device_count__ ";
         case MSG_MATRIX_MUL_GPU:
             return " __matrix_mul_gpu__ ";
     }
@@ -66,6 +69,9 @@ namespace mgpu {
         msg_t type; // message type
         uint key; // pid << 16 + stream_t
     } AbMsg; // abstract message
+
+    typedef struct CudaGetDeviceCountMsg : public AbMsg {
+    } CudaGetDeviceCountMsg;
 
     typedef struct CudaMallocMsg : public AbMsg {
         size_t size; // gpu memory bytes
@@ -101,7 +107,7 @@ namespace mgpu {
     } CudaStreamCreateMsg;
 
     typedef struct CudaStreamSyncMsg : public AbMsg {
-    } CudaStreamSynchronize;
+    } CudaStreamSyncMsg;
 
     typedef struct CudaLaunchKernelMsg : public AbMsg {
         LaunchConf conf;

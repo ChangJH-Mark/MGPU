@@ -63,6 +63,7 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
         case MSG_CUDA_LAUNCH_KERNEL:
         case MSG_CUDA_STREAM_CREATE:
         case MSG_CUDA_STREAM_SYNCHRONIZE:
+        case MSG_CUDA_GET_DEVICE_COUNT:
         case MSG_MATRIX_MUL_GPU:
             push_command(static_cast<AbMsg *>(msg), socket);
             break;

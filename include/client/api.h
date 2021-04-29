@@ -11,13 +11,19 @@
 #include "common/message.h"
 #include "common/IPC.h"
 #include "common/helper.h"
+#define DEFAULT_STREAM_ 0xff
 
 namespace mgpu {
     // cudaApi
     struct config;
-    // communicate with server, create @p_size streams
-    // return created stream p_size, -1 on failure
-    int createStream(size_t size);
+
+    extern int default_device;
+
+    // communicate with server, get device count
+    int cudaGetDeviceCount();
+
+    // set @device used by this thread
+    void cudaSetDevice(int device);
 
     // communicate with server, call cudaMalloc with @p_size bytes synchronously
     // return gpu memory pointer, 0 on failure

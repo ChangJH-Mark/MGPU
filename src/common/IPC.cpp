@@ -12,7 +12,7 @@
 #include "common/message.h"
 using namespace mgpu;
 
-const char * mgpu::server_path = "/tmp/mgpu/server.sock";
+const char * mgpu::server_path = "/opt/custom/server.sock";
 
 pid_t mgpu::pid = getpid();
 
@@ -65,6 +65,15 @@ void IPCClient::socket_recv(uint cli, void *dst, size_t size, uint flag, const c
         perror(err_msg);
         exit(1);
     }
+}
+
+int IPCClient::send(CudaGetDeviceCountMsg* msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaGetDeviceCountMsg), 0, "fail to send cudaGetDeviceCount message");
+    int ret;
+    socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaGetDeviceCount return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
 }
 
 void* IPCClient::send(CudaMallocMsg* msg) {
