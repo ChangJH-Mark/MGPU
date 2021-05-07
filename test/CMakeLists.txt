@@ -1,6 +1,7 @@
 add_subdirectory(client)
 add_subdirectory(vectorAdd)
 add_subdirectory(Utilities)
-add_subdirectory(kernels)
 add_subdirectory(C++Utility)
+set(GENERAL_PTX_FLAG --generate-code arch=compute_50,code=sm_50 --ptx -odir=${OUTPUT_ROOT}/ptx)
 add_subdirectory(Metrics)
+add_subdirectory(kernels)

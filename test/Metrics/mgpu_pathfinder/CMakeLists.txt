@@ -1,12 +1,17 @@
 add_executable(mgpu_pathfinder pathfinder.cpp)
-add_library(pathfinder.ptx OBJECT dynproc_kernel.cu)
-target_compile_options(pathfinder.ptx PUBLIC --ptx)
-
 target_link_libraries(mgpu_pathfinder client cudart)
+
+add_custom_command(OUTPUT pathfinder.ptx
+        COMMENT build pathfinder.ptx
+        DEPENDS dynproc_kernel.cu
+        COMMAND ${CMAKE_CUDA_COMPILER} ${GENERAL_PTX_FLAG} ${CMAKE_CURRENT_SOURCE_DIR}/dynproc_kernel.cu
+        )
+add_custom_target(pf.ptx ALL
+        DEPENDS pathfinder.ptx
+        SOURCES dynproc_kernel.cu
+        )
 
 install(TARGETS mgpu_pathfinder
         DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)
-install(TARGETS pathfinder.ptx
-        DESTINATION /opt/custom/ptx)
 install(PROGRAMS run_mgpu_pathfinder
         DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)

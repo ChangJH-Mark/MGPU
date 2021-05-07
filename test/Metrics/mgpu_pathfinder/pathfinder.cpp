@@ -40,7 +40,8 @@ init(int argc, char** argv)
         printf("Usage: dynproc row_len col_len pyramid_height\n");
         exit(0);
     }
-    ::data = new int[rows*cols];
+//    ::data = new int[rows*cols];
+    ::data = static_cast<int *>(mgpu::cudaMallocHost(sizeof(int) * rows * cols));
 
     wall = new int*[rows];
 
@@ -48,7 +49,8 @@ init(int argc, char** argv)
 
         wall[n]=::data+cols*n;
 
-    result = new int[cols];
+//    result = new int[cols];
+    result = static_cast<int *>(mgpu::cudaMallocHost(sizeof(int) * cols));
 
 
 
@@ -121,7 +123,7 @@ int calc_path(int *gpuWall, int *gpuResult[2], int rows, int cols, \
 
         mgpu::LaunchConf conf;
         conf.grid = dimGrid; conf.block = dimBlock;
-        mgpu::cudaLaunchKernel(conf, "/opt/custom/ptx/dynproc_kernel","dynproc_kernel", MIN(pyramid_height, rows-t-1),
+        mgpu::cudaLaunchKernel(conf, "/opt/custom/ptx/dynproc_kernel.ptx","dynproc_kernel", MIN(pyramid_height, rows-t-1),
                                gpuWall, gpuResult[src], gpuResult[dst],
                                cols,rows, t, borderCols);
     }
@@ -190,9 +192,9 @@ void run(int argc, char** argv)
     mgpu::cudaFree(gpuResult[0]);
     mgpu::cudaFree(gpuResult[1]);
 
-    delete [] ::data;
+    mgpu::cudaFreeHost(::data);
     delete [] wall;
-    delete [] result;
+    mgpu::cudaFreeHost(result);
 
 }
 

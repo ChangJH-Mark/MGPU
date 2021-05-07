@@ -12,7 +12,9 @@
 namespace mgpu {
     class Command {
     public:
-        Command(AbMsg* m, uint cli) : type(m->type), msg(m), socket(cli), device(0), status(std::make_shared<bool>(false)) {}
+        Command(AbMsg* m, uint cli) : type(m->type), msg(m), socket(cli), device(0), status(std::make_shared<bool>(false)) {
+            device = (m->key >> 8) & 0xff;
+        }
         Command(const Command &) = delete;
         Command(Command &&origin)  noexcept {
             socket = origin.socket;

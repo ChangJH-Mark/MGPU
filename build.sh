@@ -12,7 +12,4 @@ fi
 
 cmake -DCMAKE_BUILD_TYPE=DEBUG -DCppUTILITY=ON -DBUILD_TEST=ON -H. -Bbuild
 cmake --build build -- -j 12
-if [ ! -d /opt/custom/bin/test/data ]
-then
-	cmake -P build/cmake_install.cmake
-fi
+cmake -P build/cmake_install.cmake > /dev/null

@@ -167,7 +167,7 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     CUfunction func;
     cudaCheck(
             static_cast<cudaError_t>(::cuModuleGetFunction(&func, cuModule, (string(msg->kernel) + "Proxy").c_str())));
-    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 2, msg->conf.grid,
+    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
                                  (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
     void *extra[] = {
             CU_LAUNCH_PARAM_BUFFER_POINTER, msg->param,
