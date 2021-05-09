@@ -67,6 +67,36 @@ bool mgpu::cudaStreamSynchronize(stream_t stream) {
     return ipc_cli->send(&msg);
 }
 
+bool mgpu::cudaEventCreate(event_t *event) {
+    auto ipc_cli = IPCClient::get_client();
+    CudaEventCreateMsg msg{MSG_CUDA_EVENT_CREATE, uint(pid << 16) + default_device};
+    return ipc_cli->send(&msg, event);
+}
+
+bool mgpu::cudaEventDestroy(event_t event) {
+    auto ipc_cli = IPCClient::get_client();
+    CudaEventDestroyMsg msg{MSG_CUDA_EVENT_DESTROY, uint(pid << 16) + default_device};
+    return ipc_cli->send(&msg);
+}
+
+bool mgpu::cudaEventRecord(event_t event, stream_t stream) {
+    auto ipc_cli = IPCClient::get_client();
+    CudaEventRecordMsg msg{MSG_CUDA_EVENT_RECORD, uint(pid << 16) + default_device, DEFAULT_STREAM_, event, stream};
+    return ipc_cli->send(&msg);
+}
+
+bool mgpu::cudaEventSynchronize(event_t event) {
+    auto ipc_cli = IPCClient::get_client();
+    CudaEventSyncMsg msg{MSG_CUDA_EVENT_SYNCHRONIZE, uint(pid << 16) + default_device, DEFAULT_STREAM_, event};
+    return ipc_cli->send(&msg);
+}
+
+bool mgpu::cudaEventElapsedTime(float *ms, event_t start, event_t end) {
+    auto ipc_cli = IPCClient::get_client();
+    CudaEventElapsedTimeMsg msg{MSG_CUDA_EVENT_ELAPSED_TIME, uint(pid << 16) + default_device, DEFAULT_STREAM_, start, end};
+    return ipc_cli->send(&msg, ms);
+}
+
 std::future<void*> mgpu::matrixMul_MGPU(Matrix A, Matrix B, LaunchConf launchConf) {
     if(A.width != B.height)
     {

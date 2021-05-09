@@ -16,64 +16,28 @@
 
 using namespace mgpu;
 
-std::shared_ptr<bool> Conductor::conduct(std::shared_ptr<Command> cmd) {
-    switch (cmd->get_type()) {
-        case (MSG_CUDA_MALLOC) : {
-            std::thread worker(&Conductor::do_cudamalloc, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_MALLOC_HOST) : {
-            std::thread worker(&Conductor::do_cudamallochost, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_FREE) : {
-            std::thread worker(&Conductor::do_cudafree, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_FREE_HOST) : {
-            std::thread worker(&Conductor::do_cudafreehost, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_MEMSET) : {
-            std::thread worker(&Conductor::do_cudamemset, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_MEMCPY) : {
-            std::thread worker(&Conductor::do_cudamemcpy, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_LAUNCH_KERNEL) : {
-            std::thread worker(&Conductor::do_cudalaunchkernel, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_STREAM_CREATE) : {
-            std::thread streamCreate(&Conductor::do_cudastreamcreate, this, cmd);
-            streamCreate.detach();
-            break;
-        }
-        case (MSG_CUDA_STREAM_SYNCHRONIZE) : {
-            std::thread worker(&Conductor::do_cudastreamsynchronize, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_CUDA_GET_DEVICE_COUNT) : {
-            std::thread worker(&Conductor::do_cudagetdevicecount, this, cmd);
-            worker.detach();
-            break;
-        }
-        case (MSG_MATRIX_MUL_GPU) : {
-            std::thread worker(&Conductor::do_matrixmultgpu, this, cmd);
-            worker.detach();
-            break;
-        }
-    }// switch
+void Conductor::init() {
+    func_table[MSG_CUDA_MALLOC] = &Conductor::do_cudamalloc;
+    func_table[MSG_CUDA_MALLOC_HOST] = &Conductor::do_cudamallochost;
+    func_table[MSG_CUDA_FREE] = &Conductor::do_cudafree;
+    func_table[MSG_CUDA_FREE_HOST] = &Conductor::do_cudafreehost;
+    func_table[MSG_CUDA_MEMSET] = &Conductor::do_cudamemset;
+    func_table[MSG_CUDA_MEMCPY] = &Conductor::do_cudamemcpy;
+    func_table[MSG_CUDA_LAUNCH_KERNEL] = &Conductor::do_cudalaunchkernel;
+    func_table[MSG_CUDA_STREAM_CREATE] = &Conductor::do_cudastreamcreate;
+    func_table[MSG_CUDA_STREAM_SYNCHRONIZE] = &Conductor::do_cudastreamsynchronize;
+    func_table[MSG_CUDA_GET_DEVICE_COUNT] = &Conductor::do_cudagetdevicecount;
+    func_table[MSG_CUDA_EVENT_CREATE] = &Conductor::do_cudaeventcreate;
+    func_table[MSG_CUDA_EVENT_DESTROY] = &Conductor::do_cudaeventdestroy;
+    func_table[MSG_CUDA_EVENT_RECORD] = &Conductor::do_cudaeventrecord;
+    func_table[MSG_CUDA_EVENT_SYNCHRONIZE] = &Conductor::do_cudaeventsynchronize;
+    func_table[MSG_CUDA_EVENT_ELAPSED_TIME] = &Conductor::do_cudaeventelapsedtime;
+    func_table[MSG_MATRIX_MUL_GPU] = &Conductor::do_matrixmultgpu;
+}
+
+std::shared_ptr<bool> Conductor::conduct(const std::shared_ptr<Command>& cmd) {
+    std::thread worker(func_table[cmd->get_type()], this, cmd);
+    worker.detach();
     return cmd->get_status();
 }
 
@@ -233,6 +197,39 @@ void Conductor::do_cudagetdevicecount(const std::shared_ptr<Command> &cmd) {
     int count;
     cudaCheck(::cudaGetDeviceCount(&count));
     cmd->finish<int>(count);
+}
+
+void Conductor::do_cudaeventcreate(const std::shared_ptr<Command> &cmd) {
+    cudaEvent_t event;
+    cudaCheck(::cudaEventCreate(&event));
+    cmd->finish<cudaEvent_t>(event);
+}
+
+void Conductor::do_cudaeventdestroy(const std::shared_ptr<Command> &cmd) {
+    cudaCheck(::cudaEventDestroy(cmd->get_msg<CudaEventDestroyMsg>()->event));
+    cmd->finish<bool>(true);
+}
+
+void Conductor::do_cudaeventrecord(const std::shared_ptr<Command> &cmd) {
+    cudaCheck(::cudaSetDevice(cmd->get_device()));
+    auto msg = cmd->get_msg<CudaEventRecordMsg>();
+    cudaCheck(::cudaEventRecord(msg->event, msg->stream));
+    cmd->finish<bool>(true);
+}
+
+void Conductor::do_cudaeventsynchronize(const std::shared_ptr<Command> &cmd) {
+    cudaCheck(::cudaSetDevice(cmd->get_device()));
+    auto msg = cmd->get_msg<CudaEventSyncMsg>();
+    cudaCheck(::cudaEventSynchronize(msg->event));
+    cmd->finish<bool>(true);
+}
+
+void Conductor::do_cudaeventelapsedtime(const std::shared_ptr<Command> &cmd) {
+    cudaCheck(::cudaSetDevice(cmd->get_device()));
+    auto msg = cmd->get_msg<CudaEventElapsedTimeMsg>();
+    float ret;
+    cudaCheck(::cudaEventElapsedTime(&ret, msg->start, msg->end));
+    cmd->finish(ret);
 }
 
 void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {

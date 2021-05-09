@@ -16,16 +16,17 @@ namespace mgpu {
             joinable = false;
         };
 
-        virtual void init() override{};
+        virtual void init() override;
         virtual void run() override{};
         virtual void destroy() override{};
         virtual void join() override{};
 
     public:
-        std::shared_ptr<bool> conduct(std::shared_ptr<Command> cmd);
+        std::shared_ptr<bool> conduct(const std::shared_ptr<Command>& cmd);
 
     private:
         std::unordered_map<void*, int> shms_id;
+        std::map<int, void (Conductor::*)(const std::shared_ptr<Command>&)> func_table;
 
     private:
         void do_cudamalloc(const std::shared_ptr<Command>& cmd);
@@ -38,6 +39,11 @@ namespace mgpu {
         void do_cudastreamcreate(const std::shared_ptr<Command>& cmd);
         void do_cudastreamsynchronize(const std::shared_ptr<Command>& cmd);
         void do_cudagetdevicecount(const std::shared_ptr<Command>& cmd);
+        void do_cudaeventcreate(const std::shared_ptr<Command>& cmd);
+        void do_cudaeventdestroy(const std::shared_ptr<Command>& cmd);
+        void do_cudaeventrecord(const std::shared_ptr<Command>& cmd);
+        void do_cudaeventsynchronize(const std::shared_ptr<Command>& cmd);
+        void do_cudaeventelapsedtime(const std::shared_ptr<Command>& cmd);
 
         void do_matrixmultgpu(const std::shared_ptr<Command>& cmd);
     };

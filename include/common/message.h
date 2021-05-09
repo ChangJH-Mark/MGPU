@@ -18,6 +18,11 @@
 #define MSG_CUDA_STREAM_CREATE 0x8
 #define MSG_CUDA_STREAM_SYNCHRONIZE 0x9
 #define MSG_CUDA_GET_DEVICE_COUNT 0xa
+#define MSG_CUDA_EVENT_CREATE 0xb
+#define MSG_CUDA_EVENT_DESTROY 0xc
+#define MSG_CUDA_EVENT_RECORD 0xd
+#define MSG_CUDA_EVENT_SYNCHRONIZE 0xe
+#define MSG_CUDA_EVENT_ELAPSED_TIME 0xf
 #define FUNCTION_DEFINED_MASK_ 0x10000
 #define MSG_MATRIX_MUL_GPU (FUNCTION_DEFINED_MASK_ | 0x1)
 
@@ -43,6 +48,16 @@ inline const char *get_type_msg(uint type) {
             return " __cuda_stream_synchronize__ ";
         case MSG_CUDA_GET_DEVICE_COUNT:
             return " __cuda_get_device_count__ ";
+        case MSG_CUDA_EVENT_CREATE:
+            return " __cuda_event_create__ ";
+        case MSG_CUDA_EVENT_DESTROY:
+            return " __cuda_event_destroy__ ";
+        case MSG_CUDA_EVENT_RECORD:
+            return " __cuda_event_record__ ";
+        case MSG_CUDA_EVENT_SYNCHRONIZE:
+            return " __cuda_event_synchronize__ ";
+        case MSG_CUDA_EVENT_ELAPSED_TIME:
+            return " __cuda_event_elapsed_time__ ";
         case MSG_MATRIX_MUL_GPU:
             return " __matrix_mul_gpu__ ";
     }
@@ -51,6 +66,7 @@ inline const char *get_type_msg(uint type) {
 namespace mgpu {
     typedef uint msg_t;
     typedef cudaStream_t stream_t;
+    typedef cudaEvent_t event_t;
 
     typedef struct config {
         dim3 grid {1, 1, 1};
@@ -65,7 +81,7 @@ namespace mgpu {
         int height = 0;
     } Matrix;
 
-    typedef struct {
+    typedef struct AbMsg{
     public:
         msg_t type; // message type
         uint key; // pid << 16 + device
@@ -111,12 +127,33 @@ namespace mgpu {
     typedef struct CudaStreamSyncMsg : public AbMsg {
     } CudaStreamSyncMsg;
 
+    typedef struct CudaEventCreateMsg : public AbMsg {
+    } CudaEventCreateMsg;
+
+    typedef struct CudaEventDestroyMsg : public AbMsg {
+        event_t event;
+    } CudaEventDestroyMsg;
+
+    typedef struct CudaEventRecordMsg : public AbMsg {
+        event_t event;
+        stream_t stream;
+    } CudaEventRecordMsg;
+
+    typedef struct CudaEventSyncMsg : public AbMsg {
+        event_t event;
+    } CudaEventSyncMsg;
+
+    typedef struct CudaEventElapsedTimeMsg : public AbMsg {
+        event_t start;
+        event_t end;
+    } CudaEventElapsedTimeMsg;
+
     typedef struct CudaLaunchKernelMsg : public AbMsg {
         LaunchConf conf;
-        char ptx[128]; // ptx ptx
-        char kernel[128]; // kernel symbol
-        char param[1024]; // save parameters
-        size_t p_size;    // param p_size
+        char ptx[128]{}; // ptx ptx
+        char kernel[128]{}; // kernel symbol
+        char param[1024]{}; // save parameters
+        size_t p_size{};    // param p_size
     } CudaLaunchKernelMsg;
 
     typedef struct MatrixMulMsg : public AbMsg {

@@ -54,6 +54,23 @@ namespace mgpu {
     // communicate with server, call cudaStreamSynchronize on @stream
     bool cudaStreamSynchronize(stream_t stream);
 
+    // communicate with server, call cudaEventCreate
+    // create event and save handler in @event
+    bool cudaEventCreate(event_t * event);
+    bool cudaEventDestroy(event_t event);
+
+    // communicate with server, call cudaEventRecord
+    // record @event on @stream
+    bool cudaEventRecord(event_t event, stream_t stream = nullptr);
+
+    // communicate with server, call cudaEventSynchronize
+    // synchronize on @event
+    bool cudaEventSynchronize(event_t event);
+
+    // communicate with server, call cudaEventElapsedTime
+    // calculate @ms from event @start to @end
+    bool cudaEventElapsedTime(float * ms, event_t start, event_t end);
+
     // communicate with server, start kernel with @conf set @param
     template<typename... Args>
     bool cudaLaunchKernel(LaunchConf conf, const char* name, const char* kernel, Args... args) {

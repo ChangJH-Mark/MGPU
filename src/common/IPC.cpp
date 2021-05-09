@@ -164,6 +164,49 @@ bool IPCClient::send(CudaStreamSyncMsg *msg) {
     return ret;
 }
 
+bool IPCClient::send(CudaEventCreateMsg *msg, event_t *event){
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaEventSyncMsg), 0, "fail to send cudaEventCreate message");
+    socket_recv(cli, event, sizeof(event_t), 0, "error to receive cudaEventCreate return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return true;
+}
+
+bool IPCClient::send(CudaEventDestroyMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaEventDestroyMsg), 0, "fail to send cudaEventDestroy message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(bool), 0, "error to receive cudaEventDestroy return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+bool IPCClient::send(CudaEventRecordMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaEventRecordMsg), 0, "fail to send cudaEventRecord message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(bool), 0, "error to receive cudaEventRecord return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+bool IPCClient::send(CudaEventSyncMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaEventSyncMsg), 0, "fail to send cudaEventSync message");
+    bool ret;
+    socket_recv(cli, &ret, sizeof(bool), 0, "error to receive cudaEventSync return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return ret;
+}
+
+bool IPCClient::send(CudaEventElapsedTimeMsg *msg, float *ms) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(CudaEventElapsedTimeMsg), 0, "fail to send cudaEventElapsedTime message");
+    socket_recv(cli, ms, sizeof(float), 0, "error to receive cudaEventElapsedTime return");
+    std::async(&IPCClient::socket_clear, this, cli);
+    return true;
+}
+
 std::future<void*> IPCClient::send(MatrixMulMsg *msg) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(MatrixMulMsg), 0, "fail to send MatrixMulGPU message");

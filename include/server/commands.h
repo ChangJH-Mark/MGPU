@@ -75,6 +75,7 @@ namespace mgpu {
         ::send(socket, ptr, sizeof(T) * num, 0);
         ::close(socket);
         *status = true;
+        delete[] ptr;
     }
 }
 
