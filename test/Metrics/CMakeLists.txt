@@ -22,3 +22,4 @@ endif()
 
 # mgpu version
 add_subdirectory(mgpu_pathfinder)
+add_subdirectory(mgpu_streamcluster)

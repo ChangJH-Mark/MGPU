@@ -1,5 +1,5 @@
 add_executable(mgpu_pathfinder pathfinder.cpp)
-target_link_libraries(mgpu_pathfinder client cudart)
+target_link_libraries(mgpu_pathfinder client)
 
 add_custom_command(OUTPUT pathfinder.ptx
         COMMENT build pathfinder.ptx
