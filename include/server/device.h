@@ -27,13 +27,14 @@ namespace mgpu {
 
         int num = 0;
         std::list<GPU*> gpu_list;
-        std::map<uint, std::array<cudaStream_t*, MAX_STREAMS>> gpu_streams;
+        std::map<uint, std::array<cudaStream_t, MAX_STREAMS>> gpu_streams;
 
     public:
-        cudaStream_t *getStream(uint device, uint stream){
-            return gpu_streams[device][stream];
+        std::array<cudaStream_t, MAX_STREAMS> getStream(uint device)
+        {
+            return gpu_streams[device];
         }
-        int counts() {return num;}
+        int counts() const {return num;}
     public:
         Device() =default;
         void observe();

@@ -11,7 +11,7 @@
 #include "common/message.h"
 #include "common/IPC.h"
 #include "common/helper.h"
-#define DEFAULT_STREAM_ 0xff
+#define DEFAULT_STREAM_ 0x0
 
 namespace mgpu {
     // cudaApi
@@ -58,7 +58,7 @@ namespace mgpu {
     template<typename... Args>
     bool cudaLaunchKernel(LaunchConf conf, const char* name, const char* kernel, Args... args) {
         auto ipc_cli = IPCClient::get_client();
-        CudaLaunchKernelMsg msg{MSG_CUDA_LAUNCH_KERNEL, uint(pid << 16) + conf.stream, conf};
+        CudaLaunchKernelMsg msg{MSG_CUDA_LAUNCH_KERNEL, uint(pid << 16) + default_device, conf.stream, conf};
         strcpy(msg.ptx, name);
         strcpy(msg.kernel, kernel);
         msg.p_size = fillParameters(msg.param, 0, args...);

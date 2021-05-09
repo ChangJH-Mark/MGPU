@@ -81,11 +81,12 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
 void Receiver::push_command(AbMsg *msg, uint cli) {
     auto server = get_server();
     server->map_mtx.lock();
-    if(server->task_map.find(msg->key) == server->task_map.end()) {
-        server->task_map[msg->key] = make_pair(make_shared<std::mutex>(), make_shared<Server::List>());
+    ListKey key = {msg->key, msg->stream};
+    if(server->task_map.find(key) == server->task_map.end()) {
+        server->task_map[key] = make_pair(make_shared<std::mutex>(), make_shared<Server::List>());
     }
-    auto mtx = server->task_map[msg->key].first;
-    auto list = server->task_map[msg->key].second;
+    auto mtx = server->task_map[key].first;
+    auto list = server->task_map[key].second;
     mtx->lock();
     std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << " from " << (msg->key >> 16) << std::endl;
     list->push_back(make_shared<Command>(msg, cli));

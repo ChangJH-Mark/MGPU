@@ -26,7 +26,7 @@ namespace mgpu {
         bool send(CudaMemsetMsg*);
         bool send(CudaMemcpyMsg*);
         bool send(CudaLaunchKernelMsg*);
-        bool send(CudaStreamCreateMsg*, int * streams);
+        bool send(CudaStreamCreateMsg*, stream_t * streams);
         bool send(CudaStreamSyncMsg *msg);
         std::future<void *> send(MatrixMulMsg *msg);
     public:

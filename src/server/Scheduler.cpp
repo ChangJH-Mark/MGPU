@@ -25,27 +25,29 @@ void Scheduler::do_scan() {
         server->map_mtx.lock();
         for(auto iter = server->task_map.begin(); iter != server->task_map.end();)
         {
+            auto & k = iter->first;
             // socket_clear empty list
             if(iter->second.second->empty())
             {
-                server->available_map.erase(iter->first);
-                server->task_map.erase(iter++);
+//                server->available_map.erase(iter->first);
+//                server->task_map.erase(iter++);
+                iter++;
                 continue;
             }
             auto mtx = iter->second.first;
             auto list = iter->second.second;
             lock_guard<std::mutex> list_guard(*mtx);
-            if(server->available_map.count(iter->first) > 0)
+            if(server->available_map.count(k) > 0)
             {
-                if(!server->available_map[iter->first].get()){
+                if(!server->available_map[k].get()){
                     iter++;
                     continue;
                 }
-                server->available_map.erase(iter->first);
+                server->available_map.erase(k);
             }
             shared_ptr<Command> cmd = list->front();
             list->pop_front();
-            server->available_map[iter->first] = conductor->conduct(cmd);
+            server->available_map[k] = conductor->conduct(cmd);
             ++iter;
         }
         server->map_mtx.unlock();

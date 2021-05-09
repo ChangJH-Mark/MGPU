@@ -13,13 +13,8 @@
 
 #define MAX_STREAMS 32
 #define WORKER_GRID 60
-#define key2stream(key) (((key) >> 16 + (key) & 0xffff) % MAX_STREAMS)
 
 using namespace mgpu;
-
-cudaStream_t Conductor::get_stream(uint device, uint key) {
-    return *(get_server()->get_device()->getStream(device, key2stream(key)));
-}
 
 std::shared_ptr<bool> Conductor::conduct(std::shared_ptr<Command> cmd) {
     switch (cmd->get_type()) {
@@ -176,14 +171,13 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     };
     std::cout << __FUNCTION__ << " launch from ptx" << msg->ptx << " kernel: " << std::string(msg->kernel) + "Proxy"
               << " at : device : "
-              << cmd->get_device() << " stream: " << key2stream(msg->key) << " cudaStream_t : "
-              << get_stream(cmd->get_device(), msg->key) << " gridDim " + to_string(msg->conf.grid.x) + " "
+              << cmd->get_device() << " cudaStream_t : " << cmd->get_stream() << " gridDim " + to_string(msg->conf.grid.x) + " "
               << to_string(msg->conf.grid.y) + " " << to_string(msg->conf.grid.z) + " "
               << std::endl;
     cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1,
                                                         msg->conf.block.x, msg->conf.block.y, msg->conf.block.z,
                                                         msg->conf.share_memory,
-                                                        get_stream(cmd->get_device(), msg->key),
+                                                        cmd->get_stream(),
                                                         NULL, extra)));
     cmd->finish<bool>(true);
 }
@@ -191,33 +185,46 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaStreamCreateMsg>();
-    int *ret = new int[msg->num];
+    stream_t *ret = new stream_t[msg->num];
     auto server = get_server();
     std::lock_guard<std::mutex> streamCreateGuard(server->map_mtx);
-    std::map<int, bool> used;
-    for (int i = 0; i < msg->num; i++) {
+
+    std::map<stream_t, bool> unused;
+    for(int i =0;i<msg->num;i++)
+    {
         bool found = false;
-        for (int stream = 1; stream <= MAX_STREAMS; stream++) {
-            if (server->task_map.find(msg->key & 0x0000 + stream) == server->task_map.end() && !used[stream]) {
+        for(auto s : server->get_device()->getStream(cmd->get_device()))
+        {
+            auto k = ListKey{msg->key, s};
+            if(server->task_map.find(k) == server->task_map.end())
+            {
                 found = true;
-                ret[i] = stream;
-                used[stream] = true;
+                ret[i] = s;
                 break;
+            } else {
+                unused[s] = true;
             }
         }
-        if (!found) {
-            cmd->finish<int>(ret, i + 1);
+        if(!found) {
+            stream_t s;
+            if(unused.size())
+            {
+                s = unused.begin()->first;
+                unused.erase(unused.begin());
+            } else {
+                s = server->get_device()->getStream(cmd->get_device())[random() % MAX_STREAMS];
+            }
+            ret[i] = s;
         }
     }
-    cmd->finish<int>(ret, msg->num);
+    cmd->finish<stream_t>(ret, msg->num);
 }
 
 void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
-    auto msg = cmd->get_msg<CudaStreamSyncMsg>();
     std::cout << __FUNCTION__ << " synchronize stream: at device: " << cmd->get_device() << " stream: "
-              << key2stream(msg->key) << " cudaStream_t: " << get_stream(cmd->get_device(), msg->key) << std::endl;
-    cudaCheck(::cudaStreamSynchronize(get_stream(cmd->get_device(), msg->key)));
+              << cmd->get_stream() << std::endl;
+    cudaCheck(::cudaStreamSynchronize(cmd->get_stream()));
     cmd->finish<bool>(true);
 }
 

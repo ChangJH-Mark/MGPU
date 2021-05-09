@@ -21,11 +21,10 @@ void mgpu::Device::init() {
         auto gpu = new GPU;
         init_gpu(gpu, dev);
         gpu_list.push_back(gpu);
-        std::array<cudaStream_t*, MAX_STREAMS> streams{};
+        std::array<cudaStream_t, MAX_STREAMS> streams{};
         for(int j = 0; j < MAX_STREAMS; j++){
-            streams[j] = new cudaStream_t;
-            cudaCheck(cudaStreamCreate(streams[j]));
-            std::cout << __FUNCTION__ << " create device: " << dev << " stream: " << j << " ptr: " << *(streams[j]) << std::endl;
+            cudaCheck(cudaStreamCreate(&streams[j]));
+            std::cout << __FUNCTION__ << " create device: " << dev << " stream: " << j << " ptr: " << streams[j] << std::endl;
         }
         gpu_streams[dev] = streams;
     }
@@ -34,11 +33,6 @@ void mgpu::Device::init() {
 void mgpu::Device::destroy() {
     for(auto item : gpu_list){
         delete item;
-    }
-    for(auto item : gpu_streams) {
-        for(auto stream : item.second) {
-            delete stream;
-        }
     }
 }
 

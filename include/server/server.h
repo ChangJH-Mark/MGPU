@@ -9,6 +9,7 @@
 #include <mutex>
 #include <list>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <future>
 #include "mod.h"
@@ -47,8 +48,8 @@ namespace mgpu {
 
     private: // mgpu-Streams
         std::mutex map_mtx;
-        std::map<uint, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>> task_map; // key: pid << 16 + stream, value: <mutex, CmdList>
-        std::map<uint, shared_ptr<bool>> available_map; // key: pid << 16 + stream, value: isStreamBlocked
+        std::map<ListKey, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>, CompareKey> task_map; // key: ListKey, value: <mutex, CmdList>
+        std::map<ListKey, shared_ptr<bool>, CompareKey> available_map; // key: pid << 16 + stream, value: isStreamBlocked
 
         friend Server* get_server();
         friend void destroy_server();

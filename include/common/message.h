@@ -6,6 +6,7 @@
 #define FASTGPU_MESSAGE_H
 
 #include <cuda_runtime.h>
+#include <cuda.h>
 
 #define MSG_CUDA_MALLOC    0x1
 #define MSG_CUDA_MALLOC_HOST 0x2
@@ -48,11 +49,14 @@ inline const char *get_type_msg(uint type) {
 }
 
 namespace mgpu {
+    typedef uint msg_t;
+    typedef cudaStream_t stream_t;
+
     typedef struct config {
         dim3 grid {1, 1, 1};
         dim3 block {1, 1, 1};
         int share_memory {0};
-        int stream {0};
+        stream_t stream {nullptr};
     } LaunchConf;
 
     typedef struct Matrix{
@@ -61,13 +65,11 @@ namespace mgpu {
         int height = 0;
     } Matrix;
 
-    typedef uint msg_t;
-    typedef int stream_t;
-
     typedef struct {
     public:
         msg_t type; // message type
-        uint key; // pid << 16 + stream_t
+        uint key; // pid << 16 + device
+        stream_t stream; // stream
     } AbMsg; // abstract message
 
     typedef struct CudaGetDeviceCountMsg : public AbMsg {

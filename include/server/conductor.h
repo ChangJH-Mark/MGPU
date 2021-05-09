@@ -28,7 +28,6 @@ namespace mgpu {
         std::unordered_map<void*, int> shms_id;
 
     private:
-        cudaStream_t get_stream(uint device, uint key);
         void do_cudamalloc(const std::shared_ptr<Command>& cmd);
         void do_cudamallochost(const std::shared_ptr<Command>& cmd);
         void do_cudafree(const std::shared_ptr<Command>& cmd);
