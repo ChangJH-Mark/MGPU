@@ -124,8 +124,7 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     CUmodule cuModule;
     cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, msg->ptx)));
     CUfunction func;
-    cudaCheck(
-            static_cast<cudaError_t>(::cuModuleGetFunction(&func, cuModule, (string(msg->kernel) + "Proxy").c_str())));
+    cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&func, cuModule, (string(msg->kernel) + "Proxy").c_str())));
     msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
                                  (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
     void *extra[] = {

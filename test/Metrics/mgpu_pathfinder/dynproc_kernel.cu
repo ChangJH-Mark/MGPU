@@ -1,6 +1,7 @@
 //
 // Created by root on 2021/4/27.
 //
+#include <stdio.h>
 #define BLOCK_SIZE 256
 #define HALO 1 // halo width along one direction when advancing to the next iteration
 #define IN_RANGE(x, min, max)   ((x)>=(min) && (x)<=(max))

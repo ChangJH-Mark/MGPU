@@ -200,7 +200,7 @@ float pgain( long x, Points *points, float z, long int *numcenters, int kmax, bo
     mgpu::config conf;
     conf.grid = grid_size;
     conf.block = THREADS_PER_BLOCK;
-    mgpu::cudaLaunchKernel(conf, "/opt/custom/ptx/kernel_compute_cost.ptx", "kernel_compute_cost",
+    mgpu::cudaLaunchKernel(conf, "/opt/custom/ptx/streamcluster.ptx", "kernel_compute_cost",
                            num,					// in:	# of data
                            dim,					// in:	dimension of point coordinates
                            x,						// in:	point to open a center at
