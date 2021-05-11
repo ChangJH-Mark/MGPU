@@ -123,7 +123,7 @@ int calc_path(int *gpuWall, int *gpuResult[2], int rows, int cols, \
 
         mgpu::LaunchConf conf;
         conf.grid = dimGrid; conf.block = dimBlock;
-        mgpu::cudaLaunchKernel(conf, "/opt/custom/ptx/dynproc_kernel.ptx","dynproc_kernel", MIN(pyramid_height, rows-t-1),
+        mgpu::cudaLaunchKernel(conf, "/opt/custom/ptx/pathfinder.ptx","dynproc_kernel", MIN(pyramid_height, rows-t-1),
                                gpuWall, gpuResult[src], gpuResult[dst],
                                cols,rows, t, borderCols);
     }

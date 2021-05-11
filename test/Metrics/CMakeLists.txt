@@ -21,5 +21,6 @@ if(${BUILD_TEST})
 endif()
 
 # mgpu version
+add_subdirectory(mgpu_hotspot)
 add_subdirectory(mgpu_pathfinder)
 add_subdirectory(mgpu_streamcluster)
