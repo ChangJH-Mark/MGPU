@@ -133,7 +133,7 @@ int compute_tran_temp(float *MatrixPower,float *MatrixTemp[2], int col, int row,
         src = dst;
         dst = temp;
         auto conf = mgpu::LaunchConf{dimGrid, dimBlock};
-        mgpu::cudaLaunchKernel(conf,"/opt/custom/ptx/hotspot.ptx", "calculate_temp",MIN(num_iterations, total_iterations-t), MatrixPower,MatrixTemp[src],MatrixTemp[dst],\
+        mgpu::cudaLaunchKernel(conf,"/opt/custom/ptx/hotspot.ptx", "calculate_temp",int(MIN(num_iterations, total_iterations-t)), MatrixPower,MatrixTemp[src],MatrixTemp[dst],\
 		col,row,borderCols, borderRows, Cap,Rx,Ry,Rz,step,time_elapsed);
     }
     return dst;
