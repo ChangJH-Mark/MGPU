@@ -9,11 +9,24 @@ if(${BUILD_TEST})
     add_executable(sc_gpu streamcluster/streamcluster_header.cu streamcluster/streamcluster_cuda.cu streamcluster/streamcluster_cuda_cpu.cpp)
     target_link_libraries(sc_gpu cuda)
 
+    # particlefilter
+    add_executable(particlefilter_float particlefilter/ex_particle_CUDA_float_seq.cu)
+    add_executable(particlefilter_naive particlefilter/ex_particle_CUDA_naive_seq.cu)
+
+    target_link_libraries(particlefilter_float m cuda)
+    target_link_libraries(particlefilter_naive m cuda)
+
+    target_compile_options(particlefilter_float BEFORE
+            PRIVATE -g -O3 -use_fast_math -arch sm_50)
+    target_compile_options(particlefilter_naive BEFORE
+            PRIVATE -g -O3 -use_fast_math -arch sm_50)
+
+    # install executable, scripts, test data
     # executable
-    install(TARGETS pathfinder hotspot sc_gpu
+    install(TARGETS pathfinder hotspot sc_gpu particlefilter_float
             DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)
     # run scripts
-    install(PROGRAMS pathfinder/run_pathfinder hotspot/run_hotspot streamcluster/run_scgpu
+    install(PROGRAMS pathfinder/run_pathfinder hotspot/run_hotspot streamcluster/run_scgpu particlefilter/run_particlefilter
             DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)
     # test data
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/data
@@ -24,3 +37,4 @@ endif()
 add_subdirectory(mgpu_hotspot)
 add_subdirectory(mgpu_pathfinder)
 add_subdirectory(mgpu_streamcluster)
+add_subdirectory(mgpu_particlefilter)
