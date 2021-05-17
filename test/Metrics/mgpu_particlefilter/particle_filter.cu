@@ -69,10 +69,10 @@ find_index_kernelProxy(double *arrayX, double *arrayY, double *CDF, double *u, d
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
-            if (leader) {
-                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
-                       blockIDX.z);
-            }
+//            if (leader) {
+//                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
+//                       blockIDX.z);
+//            }
 // real kernel
 //matrixMul(C, A, B, wA, wB, blockIDX, gridDIM);
             find_index_kernel(arrayX, arrayY, CDF, u, xj, yj, weights, Nparticles, blockIDX, gridDIM);
@@ -121,10 +121,10 @@ normalize_weights_kernelProxy(double *weights, int Nparticles, double *partial_s
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
-            if (leader) {
-                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
-                       blockIDX.z);
-            }
+//            if (leader) {
+//                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
+//                       blockIDX.z);
+//            }
             normalize_weights_kernel(weights, Nparticles, partial_sums, CDF, u, seed, blockIDX, gridDIM);
             __syncthreads();
         }
@@ -170,10 +170,10 @@ extern "C" __global__ void sum_kernelProxy(double *partial_sums, int Nparticles,
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
-            if (leader) {
-                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
-                       blockIDX.z);
-            }
+//            if (leader) {
+//                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
+//                       blockIDX.z);
+//            }
 // real kernel
             sum_kernel(partial_sums, Nparticles, blockIDX, gridDIM);
             __syncthreads();
@@ -223,10 +223,10 @@ likelihood_kernelProxy(double *arrayX, double *arrayY, double *xj, double *yj, d
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
-            if (leader) {
-                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
-                       blockIDX.z);
-            }
+//            if (leader) {
+//                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
+//                       blockIDX.z);
+//            }
 // real kernel
 //matrixMul(C, A, B, wA, wB, blockIDX, gridDIM);
             likelihood_kernel(arrayX, arrayY, xj, yj, CDF, ind, objxy, likelihood, I, u, weights, Nparticles, countOnes,
