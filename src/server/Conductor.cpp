@@ -51,7 +51,6 @@ void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
 }
 
 void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
-    std::cout << __FUNCTION__ << " size: " << cmd->get_msg<CudaMallocHostMsg>()->size << std::endl;
     auto msg = cmd->get_msg<CudaMallocHostMsg>();
     int shm_id;
     if ((shm_id  = shmget(IPC_PRIVATE, msg->size, IPC_CREAT))< 0) {
@@ -70,8 +69,8 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
         perror("fail to shmget");
         exit(1);
     }
-    cudaCheck(::cudaSetDevice(cmd->get_device()));
-    cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
+//    cudaCheck(::cudaSetDevice(cmd->get_device()));
+//    cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
 }
 
@@ -86,8 +85,8 @@ void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     std::cout << __FUNCTION__ << " free: " << cmd->get_msg<CudaFreeHostMsg>()->ptr << std::endl;
     auto host_ptr = cmd->get_msg<CudaFreeHostMsg>()->ptr;
-    cudaCheck(::cudaSetDevice(cmd->get_device()));
-    cudaCheck(::cudaHostUnregister(host_ptr))
+//    cudaCheck(::cudaSetDevice(cmd->get_device()));
+//    cudaCheck(::cudaHostUnregister(host_ptr))
     if(0 > shmdt(host_ptr))
     {
         perror("server fail to release share memory");

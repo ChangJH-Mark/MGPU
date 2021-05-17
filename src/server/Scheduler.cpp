@@ -22,16 +22,16 @@ void Scheduler::do_scan() {
     std::this_thread::sleep_for(std::chrono::microseconds(100));
     auto server = get_server();
     while (1) {
-        server->map_mtx.lock();
+        std::unique_lock<std::mutex> lk(server->map_mtx);
+        if(server->task_map.size() == 0) {
+            server->cv.wait(lk, [server] { return server->task_map.size() > 0; });
+        }
         for(auto iter = server->task_map.begin(); iter != server->task_map.end();)
         {
             auto & k = iter->first;
-            // socket_clear empty list
             if(iter->second.second->empty())
             {
-//                server->available_map.erase(iter->first);
-//                server->task_map.erase(iter++);
-                iter++;
+                server->task_map.erase(iter++);
                 continue;
             }
             auto mtx = iter->second.first;
@@ -50,7 +50,7 @@ void Scheduler::do_scan() {
             server->available_map[k] = conductor->conduct(cmd);
             ++iter;
         }
-        server->map_mtx.unlock();
+        lk.unlock();
     } // while loop
 }
 

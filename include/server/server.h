@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <memory>
 #include <future>
+#include <condition_variable>
 #include "mod.h"
 #include "commands.h"
 #include "scheduler.h"
@@ -48,6 +49,7 @@ namespace mgpu {
 
     private: // mgpu-Streams
         std::mutex map_mtx;
+        std::condition_variable cv;
         std::map<ListKey, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>, CompareKey> task_map; // key: ListKey, value: <mutex, CmdList>
         std::map<ListKey, shared_ptr<bool>, CompareKey> available_map; // key: pid << 16 + stream, value: isStreamBlocked
 

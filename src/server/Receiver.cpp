@@ -97,6 +97,7 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     list->push_back(make_shared<Command>(msg, cli));
     mtx->unlock();
     server->map_mtx.unlock();
+    server->cv.notify_all();
 }
 
 void Receiver::do_accept() {
