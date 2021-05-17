@@ -17,5 +17,5 @@ int main() {
     auto server = get_server();
     cout << "initialization complete, wait for jobs" << endl;
     server->join();
-    return 0;
+    pthread_exit(nullptr); // wait for worker thread exit
 }

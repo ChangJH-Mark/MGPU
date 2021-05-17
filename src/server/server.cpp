@@ -40,7 +40,6 @@ void Server::join() {
             m.second->join();
         }
     }
-    while (1) {}
 }
 
 void mgpu::destroy_server() {

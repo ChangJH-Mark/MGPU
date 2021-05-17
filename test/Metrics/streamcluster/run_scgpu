@@ -1,2 +1,5 @@
 #!/bin/bash
+start=$(date +%s)
 sc_gpu 10 20 256 65536 65536 1000 none scgpu.txt 1
+end=$(date +%s)
+echo $(expr $end - $start)
