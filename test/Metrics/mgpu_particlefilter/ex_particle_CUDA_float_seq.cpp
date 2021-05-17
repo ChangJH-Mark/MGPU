@@ -520,6 +520,7 @@ void particleFilter(unsigned char * I, int IszX, int IszY, int Nfr, int * seed, 
 
 int main(int argc, char * argv[]) {
 
+    clock_t sta = clock();
     char* usage = "double.out -x <dimX> -y <dimY> -z <Nfr> -np <Nparticles>";
     //check number of arguments
     if (argc != 9) {
@@ -597,5 +598,7 @@ int main(int argc, char * argv[]) {
 
     mgpu::cudaFreeHost(seed);
     mgpu::cudaFreeHost(I);
+    clock_t end = clock();
+    printf("clocks: %ld\n", end - sta);
     return 0;
 }
