@@ -23,9 +23,9 @@ void Scheduler::do_scan() {
     auto server = get_server();
     while (1) {
         std::unique_lock<std::mutex> lk(server->map_mtx);
-        if(server->task_map.size() == 0) {
-            server->cv.wait(lk, [server] { return server->task_map.size() > 0; });
-        }
+//        if(server->task_map.size() == 0) {
+//            server->cv.wait(lk, [server] { return server->task_map.size() > 0; });
+//        }
         for(auto iter = server->task_map.begin(); iter != server->task_map.end();)
         {
             auto & k = iter->first;

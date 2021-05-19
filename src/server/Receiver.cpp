@@ -93,11 +93,12 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     auto mtx = server->task_map[key].first;
     auto list = server->task_map[key].second;
     mtx->lock();
-    std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << " from " << (msg->key >> 16) << std::endl;
     list->push_back(make_shared<Command>(msg, cli));
+    std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << " from " << (msg->key >> 16)
+              << " size is " << server->task_map.size() << " list length is :" << list->size() << std::endl;
     mtx->unlock();
     server->map_mtx.unlock();
-    server->cv.notify_all();
+//    server->cv.notify_all();
 }
 
 void Receiver::do_accept() {

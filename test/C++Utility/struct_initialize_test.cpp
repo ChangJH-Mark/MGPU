@@ -1,13 +1,18 @@
-#include <random>
+#include <functional>
 #include <iostream>
-#include <ctime>
-
+#include <future>
 using namespace std;
 
+int print(int b)
+{
+    cout << "b is "<<b << endl;
+    return 898;
+}
+
 int main() {
-    int seed = 1;
-    srand(seed);
-    for(int i =0;i<10;i++)
-        cout << rand() % 100 << " ";
-    cout << endl;
+    std::packaged_task<int(int)> task(print);
+    future<int> res = task.get_future();
+    std::thread th(std::move(task), 89);
+    th.detach();
+    cout << res.get()<<endl;
 }

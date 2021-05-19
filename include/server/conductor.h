@@ -6,25 +6,29 @@
 #define FASTGPU_CONDUCTOR_H
 #include <future>
 #include <unordered_map>
+#include "common/ThreadPool.h"
 #include "server/commands.h"
 #include "mod.h"
 
 namespace mgpu {
     class Conductor : public Module{
     public:
-        Conductor() {
+        Conductor() : pool(10, 50){
             joinable = false;
         };
 
         virtual void init() override;
         virtual void run() override{};
-        virtual void destroy() override{};
+        virtual void destroy() override{
+            pool.stop();
+        };
         virtual void join() override{};
 
     public:
         std::shared_ptr<bool> conduct(const std::shared_ptr<Command>& cmd);
 
     private:
+        ThreadPool pool;
         std::unordered_map<void*, int> shms_id;
         std::map<int, void (Conductor::*)(const std::shared_ptr<Command>&)> func_table;
 

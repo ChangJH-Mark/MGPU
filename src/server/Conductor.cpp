@@ -36,8 +36,7 @@ void Conductor::init() {
 }
 
 std::shared_ptr<bool> Conductor::conduct(const std::shared_ptr<Command>& cmd) {
-    std::thread worker(func_table[cmd->get_type()], this, cmd);
-    worker.detach();
+    pool.commit(func_table[cmd->get_type()], this, cmd);
     return cmd->get_status();
 }
 

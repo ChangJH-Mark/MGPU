@@ -9,7 +9,7 @@
 using namespace mgpu;
 
 void mgpu::Device::init() {
-    cudaCheck(cudaGetDeviceCount(&num));
+    cudaCheck(::cudaGetDeviceCount(&num));
     if(num <= 0){
         std::cerr << "no GPU availiable, please check again! " << std::endl;
         exit(EXIT_FAILURE);
