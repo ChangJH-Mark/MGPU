@@ -8,15 +8,19 @@
 #include <sys/un.h>
 #include <string>
 #include <map>
+#include <memory>
+#include <unistd.h>
 #include "common/message.h"
 
 namespace mgpu {
+    class IPCClient;
     extern pid_t pid;
-    extern const char *server_path;
+    static char *server_path = "/opt/custom/server.sock";
+    static std::shared_ptr<IPCClient> single_instance;
 
     class IPCClient {
     public:
-        static IPCClient* get_client();
+        static std::shared_ptr<IPCClient> get_client();
         IPCClient& operator=(const IPCClient &) = delete;
         int send(CudaGetDeviceCountMsg*);
         void * send(CudaMallocMsg*);
@@ -34,17 +38,14 @@ namespace mgpu {
         bool send(CudaEventSyncMsg*);
         bool send(CudaEventElapsedTimeMsg*, float *ms);
         std::future<void *> send(MatrixMulMsg *msg);
+        IPCClient() : conn(-1) {} // only make_shared use it
     public:
-        ~IPCClient();
+        ~IPCClient(){ if(conn != -1) close(conn);}
     private:
-        IPCClient();
-        uint connect();
+        int conn; // connection socket
+        int connect();
         void socket_send(uint cli, void* msg, size_t size, uint flag, const char *err_msg);
         void socket_recv(uint cli, void* dst, size_t size, uint flag, const char *err_msg);
-        void socket_clear(uint socket);
-        static IPCClient* single_instance;
     };
-
-    void destroy_client();
 }
 #endif //FASTGPU_IPC_H

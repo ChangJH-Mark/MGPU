@@ -84,6 +84,7 @@ void Receiver::do_worker(uint socket, struct sockaddr* cli, socklen_t* len) {
 // thread-safe
 // @msg point to client's request, @cli is the conn socket.
 void Receiver::push_command(AbMsg *msg, uint cli) {
+    static int count = 0;
     auto server = get_server();
     server->map_mtx.lock();
     ListKey key = {msg->key, msg->stream};
@@ -95,7 +96,8 @@ void Receiver::push_command(AbMsg *msg, uint cli) {
     mtx->lock();
     list->push_back(make_shared<Command>(msg, cli));
     std::cout << "push command: type: " << msg->type << get_type_msg(msg->type) << " from " << (msg->key >> 16)
-              << " size is " << server->task_map.size() << " list length is :" << list->size() << std::endl;
+              << " size is " << server->task_map.size() << " list length is :" << list->size()
+              << "now count is " << ++count << std::endl;
     mtx->unlock();
     server->map_mtx.unlock();
 //    server->cv.notify_all();
