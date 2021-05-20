@@ -64,7 +64,7 @@ inline const char *get_type_msg(uint type) {
 }
 
 namespace mgpu {
-    typedef uint msg_t;
+    typedef uint api_t;
     typedef cudaStream_t stream_t;
     typedef cudaEvent_t event_t;
 
@@ -83,7 +83,7 @@ namespace mgpu {
 
     typedef struct AbMsg{
     public:
-        msg_t type; // message type
+        api_t type; // api type
         uint key; // pid << 16 + device
         stream_t stream; // stream
     } AbMsg; // abstract message

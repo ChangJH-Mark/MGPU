@@ -28,12 +28,12 @@ namespace mgpu {
 
     class Command {
     public:
-        Command(AbMsg* m, uint cli) : type(m->type), msg(m), socket(cli), stream(m->stream), status(std::make_shared<bool>(false)) {
+        Command(AbMsg* m, uint cli) : type(m->type), msg(m), conn(cli), stream(m->stream), status(std::make_shared<bool>(false)) {
             device = m->key & 0xffff;
         }
         Command(const Command &) = delete;
         Command(Command &&origin)  noexcept {
-            socket = origin.socket;
+            conn = origin.conn;
             type = origin.type;
             msg = origin.msg;
             device = origin.device;
@@ -41,12 +41,12 @@ namespace mgpu {
             origin.msg = nullptr;
         }
         ~Command(){
-            free(msg);
+            delete msg;
         }
 
     public:
         std::shared_ptr<bool> get_status() {return status;}
-        msg_t get_type() const{ return type;}
+        api_t get_type() const{ return type;}
         uint get_device() const{ return device;}
         stream_t get_stream() const { return stream;}
         template<class T> T* get_msg() { return (T*)msg;}
@@ -56,8 +56,8 @@ namespace mgpu {
     private:
         std::shared_ptr<bool> status;
     private:
-        uint socket;
-        msg_t type;
+        uint conn;
+        api_t type;
         AbMsg* msg;
         uint device;
         stream_t stream;
@@ -65,15 +65,13 @@ namespace mgpu {
 
     template<class T>
     void Command::finish(T value) {
-        ::send(socket, &value, sizeof(T), 0);
-        ::close(socket);
+        ::send(conn, &value, sizeof(T), 0);
         *status = true;
     }
 
     template<typename T>
     void Command::finish(T* ptr, uint num) {
-        ::send(socket, ptr, sizeof(T) * num, 0);
-        ::close(socket);
+        ::send(conn, ptr, sizeof(T) * num, 0);
         *status = true;
         delete[] ptr;
     }
