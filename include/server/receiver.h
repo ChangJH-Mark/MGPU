@@ -30,8 +30,8 @@ namespace mgpu{
 
     private:
         void do_accept();
-        void do_worker(uint conn, char*, size_t);
-        void push_command(uint conn, char*, size_t);
+        void do_worker(uint conn);
+        void push_command(uint conn);
 
     private:
         uint server_socket{};

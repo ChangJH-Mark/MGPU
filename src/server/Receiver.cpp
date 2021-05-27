@@ -61,7 +61,9 @@ void Receiver::run() {
     pthread_setname_np(handler, "Listener");
 }
 
-void Receiver::push_command(uint conn, char *msg, size_t size) {
+void Receiver::push_command(uint conn) {
+    char * msg = new char[MAX_MSG_SIZE];
+    size_t size = recv(conn, msg, MAX_MSG_SIZE, 0);
     msg[size] = 0;
     auto* api = reinterpret_cast<api_t*>(msg);
     switch (*api) {
@@ -105,15 +107,14 @@ void Receiver::push_command(uint conn, char *msg, size_t size) {
     server->map_mtx.unlock();
 }
 
-void Receiver::do_worker(uint conn, char *msg, size_t size) {
-    pool.commit(&Receiver::push_command, this, conn, msg, size);
+void Receiver::do_worker(uint conn) {
+    pool.commit(&Receiver::push_command, this, conn);
 }
 
 void Receiver::do_accept() {
     std::this_thread::sleep_for(std::chrono::microseconds(100));
     struct epoll_event events[MAX_CONNECTION];
     struct epoll_event ev{};
-    int conn;
     while (!stopped) {
         int len = epoll_wait(epfd, events, MAX_CONNECTION, -1);
         for (int i = 0; i < len; i++) {
@@ -121,20 +122,18 @@ void Receiver::do_accept() {
                 close(stopfd[0]);
                 break;
             } else if (events[i].data.fd == server_socket) {
+                uint conn;
                 if (0 > (conn = accept(server_socket, nullptr, nullptr))) {
                     perror("fail to make connect");
                     exit(EXIT_FAILURE);
                 }
-                ev.data.fd = conn, ev.events = EPOLLIN | EPOLLRDHUP;
+                ev.data.fd = conn, ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, conn, &ev);
             } else if (events[i].events & EPOLLRDHUP) {
-                // close connection
                 epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, nullptr);
                 close(events[i].data.fd);
             } else if (events[i].events & EPOLLIN) {
-                auto msg = new char[MAX_MSG_SIZE];
-                size_t size = recv(conn, msg, MAX_MSG_SIZE, 0);
-                do_worker(conn, msg, size);
+                do_worker(events[i].data.fd);
             } else {
                 cout << "unexpected epoll events happened" << endl;
             }
