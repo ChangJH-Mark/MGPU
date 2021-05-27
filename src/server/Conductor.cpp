@@ -9,6 +9,7 @@
 #include <string>
 #include "server/server.h"
 #include "server/conductor.h"
+#include "server/task.h"
 #include "common/helper.h"
 
 #define MAX_STREAMS 32
@@ -156,7 +157,7 @@ void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
         bool found = false;
         for(auto s : server->get_device()->getStream(cmd->get_device()))
         {
-            auto k = ListKey{msg->key, s};
+            auto k = TASK_KEY{msg->key, s};
             if(server->task_map.find(k) == server->task_map.end())
             {
                 found = true;

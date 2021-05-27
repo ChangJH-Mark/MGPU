@@ -4,6 +4,7 @@
 
 #include "server/receiver.h"
 #include "server/server.h"
+#include "server/task.h"
 #include "common/IPC.h"
 #include <unistd.h>
 #include <sys/un.h>
@@ -92,7 +93,7 @@ void Receiver::push_command(uint conn) {
     auto server = get_server();
     auto* abmsg = reinterpret_cast<AbMsg *>(msg);
     server->map_mtx.lock();
-    ListKey key = {abmsg->key, abmsg->stream};
+    TASK_KEY key = {abmsg->key, abmsg->stream};
     if(server->task_map.find(key) == server->task_map.end()) {
         server->task_map[key] = make_pair(make_shared<std::mutex>(), make_shared<Server::List>());
     }

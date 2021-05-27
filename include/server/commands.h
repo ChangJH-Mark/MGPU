@@ -10,22 +10,6 @@
 #include "common/message.h"
 
 namespace mgpu {
-    struct ListKey {
-        uint key; // pid << 16 + device
-        stream_t stream;
-    };
-
-    struct CompareKey {
-        int operator()(const ListKey &x, const ListKey &k) const {
-            if (x.key < k.key) {
-                return 1;
-            } else if (x.key == k.key && x.stream < k.stream) {
-                return 1;
-            } else
-                return 0;
-        }
-    };
-
     class Command {
     public:
         Command(AbMsg* m, uint cli) : type(m->type), msg(m), conn(cli), stream(m->stream), status(std::make_shared<bool>(false)) {

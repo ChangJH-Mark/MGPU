@@ -19,6 +19,7 @@
 #include "device.h"
 #include "receiver.h"
 #include "conductor.h"
+#include "task.h"
 
 using namespace std;
 namespace mgpu {
@@ -50,8 +51,8 @@ namespace mgpu {
     private: // mgpu-Streams
         std::mutex map_mtx;
         std::condition_variable cv;
-        std::map<ListKey, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>, CompareKey> task_map; // key: ListKey, value: <mutex, CmdList>
-        std::map<ListKey, shared_ptr<bool>, CompareKey> available_map; // key: pid << 16 + stream, value: isStreamBlocked
+        std::map<TASK_KEY, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>, CompareKey> task_map; // key: TASK_KEY, value: <mutex, CmdList>
+        std::map<TASK_KEY, shared_ptr<bool>, CompareKey> available_map; // key: pid << 16 + stream, value: isStreamBlocked
 
         friend Server* get_server();
         friend void destroy_server();
