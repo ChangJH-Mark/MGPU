@@ -7,9 +7,8 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <string>
-#include "server/server.h"
-#include "server/conductor.h"
 #include "server/task.h"
+#include "server/conductor.h"
 #include "common/helper.h"
 
 #define MAX_STREAMS 32
@@ -147,38 +146,9 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaStreamCreateMsg>();
-    stream_t *ret = new stream_t[msg->num];
-    auto server = get_server();
-    std::lock_guard<std::mutex> streamCreateGuard(server->map_mtx);
-
-    std::map<stream_t, bool> unused;
-    for(int i =0;i<msg->num;i++)
-    {
-        bool found = false;
-        for(auto s : server->get_device()->getStream(cmd->get_device()))
-        {
-            auto k = TASK_KEY{msg->key, s};
-            if(server->task_map.find(k) == server->task_map.end())
-            {
-                found = true;
-                ret[i] = s;
-                break;
-            } else {
-                unused[s] = true;
-            }
-        }
-        if(!found) {
-            stream_t s;
-            if(unused.size())
-            {
-                s = unused.begin()->first;
-                unused.erase(unused.begin());
-            } else {
-                s = server->get_device()->getStream(cmd->get_device())[random() % MAX_STREAMS];
-            }
-            ret[i] = s;
-        }
-    }
+    auto ret = TASK_HOLDER->create_streams(cmd->get_msg<CudaStreamCreateMsg>());
+    if(ret == nullptr)
+        cmd->finish<stream_t>(nullptr, 0);
     cmd->finish<stream_t>(ret, msg->num);
 }
 

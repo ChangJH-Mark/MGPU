@@ -89,33 +89,46 @@ void Receiver::push_command(uint conn) {
             std::cerr << "fail to recognize message info! " << *api << std::endl;
             exit(EXIT_FAILURE);
     }
-    static int total_count = 0;
-    auto server = get_server();
-    auto* abmsg = reinterpret_cast<AbMsg *>(msg);
-    server->map_mtx.lock();
-    TASK_KEY key = {abmsg->key, abmsg->stream};
-    if(server->task_map.find(key) == server->task_map.end()) {
-        server->task_map[key] = make_pair(make_shared<std::mutex>(), make_shared<Server::List>());
-    }
-    auto mtx = server->task_map[key].first;
-    auto list = server->task_map[key].second;
-    mtx->lock();
-    list->push_back(make_shared<Command>(abmsg, conn));
-    std::cout << "push command: type: " << abmsg->type << get_type_msg(abmsg->type) << " from " << (abmsg->key >> 16)
-              << " size is " << server->task_map.size() << " list length is : " << list->size()
-              << " now count is " << ++total_count << std::endl;
-    mtx->unlock();
-    server->map_mtx.unlock();
+    auto cmd = make_shared<Command>((AbMsg*)msg, conn);
+    TASK_HOLDER->insert_cmd(cmd);
 }
 
 void Receiver::do_worker(uint conn) {
     pool.commit(&Receiver::push_command, this, conn);
 }
 
+void Receiver::do_newconn() {
+    uint conn;
+    struct ucred cred{};
+    struct epoll_event ev{};
+    socklen_t len;
+    if (0 > (conn = accept(server_socket, nullptr, nullptr))) {
+        perror("fail to make connect");
+        exit(EXIT_FAILURE);
+    }
+    getsockopt(conn, SOL_SOCKET, SO_PEERCRED, &cred, &len);
+    int base = p_conns.count(cred.pid) ? p_conns[cred.pid] : 0;
+    p_conns[cred.pid] = base + 1;
+    ev.data.fd = conn, ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, conn, &ev);
+}
+
+void Receiver::do_close(uint conn) {
+    struct ucred cred{};
+    socklen_t len;
+    getsockopt(conn, SOL_SOCKET, SO_PEERCRED, &cred, &len);
+    p_conns[cred.pid]--;
+    if(p_conns[cred.pid] == 0){
+        p_conns.erase(cred.pid);
+        pool.commit(&Task::clear_pid, TASK_HOLDER.get(),cred.pid);
+    }
+    epoll_ctl(epfd, EPOLL_CTL_DEL, conn, nullptr);
+    close(conn);
+}
+
 void Receiver::do_accept() {
     std::this_thread::sleep_for(std::chrono::microseconds(100));
     struct epoll_event events[MAX_CONNECTION];
-    struct epoll_event ev{};
     while (!stopped) {
         int len = epoll_wait(epfd, events, MAX_CONNECTION, -1);
         for (int i = 0; i < len; i++) {
@@ -123,16 +136,9 @@ void Receiver::do_accept() {
                 close(stopfd[0]);
                 break;
             } else if (events[i].data.fd == server_socket) {
-                uint conn;
-                if (0 > (conn = accept(server_socket, nullptr, nullptr))) {
-                    perror("fail to make connect");
-                    exit(EXIT_FAILURE);
-                }
-                ev.data.fd = conn, ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
-                epoll_ctl(epfd, EPOLL_CTL_ADD, conn, &ev);
+                do_newconn();
             } else if (events[i].events & EPOLLRDHUP) {
-                epoll_ctl(epfd, EPOLL_CTL_DEL, events[i].data.fd, nullptr);
-                close(events[i].data.fd);
+                do_close(events[i].data.fd);
             } else if (events[i].events & EPOLLIN) {
                 do_worker(events[i].data.fd);
             } else {

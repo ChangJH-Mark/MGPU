@@ -14,6 +14,7 @@ namespace mgpu {
     public:
         Command(AbMsg* m, uint cli) : type(m->type), msg(m), conn(cli), stream(m->stream), status(std::make_shared<bool>(false)) {
             device = m->key & 0xffff;
+            pid = type >> 16;
         }
         Command(const Command &) = delete;
         Command(Command &&origin)  noexcept {
@@ -22,6 +23,7 @@ namespace mgpu {
             msg = origin.msg;
             device = origin.device;
             stream = origin.stream;
+            pid = origin.pid;
             origin.msg = nullptr;
         }
         ~Command(){
@@ -33,6 +35,7 @@ namespace mgpu {
         api_t get_type() const{ return type;}
         uint get_device() const{ return device;}
         stream_t get_stream() const { return stream;}
+        pid_t get_pid() const { return pid;}
         template<class T> T* get_msg() { return (T*)msg;}
         template<class T> void finish(T);
         template<class T> void finish(T*, uint);
@@ -41,6 +44,7 @@ namespace mgpu {
         std::shared_ptr<bool> status;
     private:
         uint conn;
+        pid_t pid;
         api_t type;
         AbMsg* msg;
         uint device;

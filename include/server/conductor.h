@@ -20,6 +20,7 @@ namespace mgpu {
         virtual void init() override;
         virtual void run() override{};
         virtual void destroy() override{
+            stopped = true;
             pool.stop();
         };
         virtual void join() override{};

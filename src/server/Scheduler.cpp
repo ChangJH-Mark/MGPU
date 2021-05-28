@@ -3,6 +3,7 @@
 //
 
 #include "server/scheduler.h"
+#include "server/task.h"
 
 using namespace mgpu;
 
@@ -20,42 +21,19 @@ void Scheduler::run() {
 
 void Scheduler::do_scan() {
     std::this_thread::sleep_for(std::chrono::microseconds(100));
-    auto server = get_server();
-    while (1) {
-        std::unique_lock<std::mutex> lk(server->map_mtx);
-//        if(server->task_map.size() == 0) {
-//            server->cv.wait(lk, [server] { return server->task_map.size() > 0; });
-//        }
-        for(auto iter = server->task_map.begin(); iter != server->task_map.end();)
-        {
-            auto & k = iter->first;
-            if(iter->second.second->empty())
-            {
-                server->task_map.erase(iter++);
-                continue;
-            }
-            auto mtx = iter->second.first;
-            auto list = iter->second.second;
-            lock_guard<std::mutex> list_guard(*mtx);
-            if(server->available_map.count(k) > 0)
-            {
-                if(!server->available_map[k].get()){
-                    iter++;
-                    continue;
-                }
-                server->available_map.erase(k);
-            }
-            shared_ptr<Command> cmd = list->front();
-            list->pop_front();
-            server->available_map[k] = conductor->conduct(cmd);
-            ++iter;
+    while (!stopped) {
+        Task::Jobs undojobs;
+        Task::Jobs jobs = TASK_HOLDER->fetch();
+        for(auto& job : jobs){
+            CONDUCTOR->conduct(job.second);
+            TASK_HOLDER->register_doing(job.first, job.second);
         }
-        lk.unlock();
+        TASK_HOLDER->put_back(undojobs);
     } // while loop
 }
 
 void Scheduler::destroy() {
-
+    stopped = true;
 }
 
 void Scheduler::join() {

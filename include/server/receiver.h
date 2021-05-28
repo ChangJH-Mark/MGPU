@@ -7,6 +7,7 @@
 #include <thread>
 #include <atomic>
 #include <map>
+#include <unordered_map>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include "mod.h"
@@ -21,7 +22,6 @@ namespace mgpu{
     public:
         Receiver() : pool(3, 20){
             joinable = true;
-            stopped = false;
         };
         void init() override;
         void run() override;
@@ -31,6 +31,8 @@ namespace mgpu{
     private:
         void do_accept();
         void do_worker(uint conn);
+        void do_newconn();
+        void do_close(uint conn);
         void push_command(uint conn);
 
     private:
@@ -39,7 +41,7 @@ namespace mgpu{
         ThreadPool pool;
         int epfd;
         int stopfd[2];
-        bool stopped;
+        unordered_map<pid_t, int> p_conns; // pid - connections
     };
 }
 #endif //FASTGPU_RECEIVER_H

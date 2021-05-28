@@ -31,6 +31,7 @@ void mgpu::Device::init() {
 }
 
 void mgpu::Device::destroy() {
+    stopped = true;
     for(auto item : gpu_list){
         delete item;
     }

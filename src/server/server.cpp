@@ -2,6 +2,10 @@
 // Created by root on 2021/3/11.
 //
 #include "server/server.h"
+#include "server/device.h"
+#include "server/scheduler.h"
+#include "server/receiver.h"
+#include "server/task.h"
 #include <functional>
 
 using namespace mgpu;
@@ -19,11 +23,13 @@ Server *mgpu::get_server() {
     server->scheduler = make_shared<Scheduler>();
     server->receiver = make_shared<Receiver>();
     server->conductor = make_shared<Conductor>();
+    server->task_holder = make_shared<Task>();
 
     server->mod["device"] = server->device;
     server->mod["scheduler"] = server->scheduler;
     server->mod["receiver"] = server->receiver;
     server->mod["conductor"] = server->conductor;
+    server->mod["task_holder"] = server->task_holder;
     for (const auto &m : server->mod) {
         m.second->init();
     }

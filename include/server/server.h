@@ -15,11 +15,10 @@
 #include <condition_variable>
 #include "mod.h"
 #include "commands.h"
-#include "scheduler.h"
-#include "device.h"
-#include "receiver.h"
-#include "conductor.h"
-#include "task.h"
+
+#define TASK_HOLDER get_server()->get_task()
+#define CONDUCTOR get_server()->get_conductor()
+#define DEVICES get_server()->get_device()
 
 using namespace std;
 namespace mgpu {
@@ -27,19 +26,19 @@ namespace mgpu {
     class Device;
     class Receiver;
     class Conductor;
+    class Task;
 
     class Server {
     public:
         Server() = default;
         void join();
 
-        typedef list<shared_ptr<Command>> List;
-
     public:
         shared_ptr<Device> get_device(){return device;}
         shared_ptr<Scheduler> get_scheduler(){return scheduler;}
         shared_ptr<Receiver> get_receiver(){return receiver;}
         shared_ptr<Conductor> get_conductor(){return conductor;}
+        shared_ptr<Task> get_task() {return task_holder;}
     private:
         static Server *single_instance;
         std::map<string, shared_ptr<Module>> mod;
@@ -47,18 +46,10 @@ namespace mgpu {
         shared_ptr<Scheduler> scheduler;
         shared_ptr<Receiver> receiver;
         shared_ptr<Conductor> conductor;
-
-    private: // mgpu-Streams
-        std::mutex map_mtx;
-        std::condition_variable cv;
-        std::map<TASK_KEY, std::pair<shared_ptr<std::mutex>, shared_ptr<List>>, CompareKey> task_map; // key: TASK_KEY, value: <mutex, CmdList>
-        std::map<TASK_KEY, shared_ptr<bool>, CompareKey> available_map; // key: pid << 16 + stream, value: isStreamBlocked
+        shared_ptr<Task> task_holder;
 
         friend Server* get_server();
         friend void destroy_server();
-        friend class Receiver;
-        friend class Scheduler;
-        friend class Conductor;
     };
     extern Server * get_server();
     extern void destroy_server();
