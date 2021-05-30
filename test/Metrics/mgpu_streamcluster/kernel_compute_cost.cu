@@ -33,8 +33,6 @@ extern "C" __global__ void kernel_compute_costProxy(int num, int dim, long x, Po
         int sm_id = get_smid();
         if (sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-        } else {
-//            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
         }
     }
     __syncthreads();
@@ -58,12 +56,6 @@ extern "C" __global__ void kernel_compute_costProxy(int num, int dim, long x, Po
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
-//            if (leader) {
-//                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y,
-//                       blockIDX.z);
-//            }
-// real kernel
-//matrixMul(C, A, B, wA, wB, blockIDX, gridDIM);
             kernel_compute_cost(num, dim, x, p, K, stride,
                                 coord_d, work_mem_d, center_table_d, switch_membership_d, blockIDX, gridDIM);
             __syncthreads();

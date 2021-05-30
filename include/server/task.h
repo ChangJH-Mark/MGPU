@@ -9,6 +9,7 @@
 #include "commands.h"
 #include "device.h"
 #include "mod.h"
+#include "common/Log.h"
 #include <list>
 #include <memory>
 #include <mutex>
@@ -22,6 +23,10 @@ namespace mgpu {
     struct TASK_KEY {
         uint key; // pid << 16 + device
         stream_t stream;
+
+        TASK_KEY(uint k, stream_t s) : key(k), stream(s) {}
+
+        TASK_KEY(pid_t pid, uint dev, stream_t s) : key((pid << 16) + dev), stream(s) {}
 
         bool operator==(const TASK_KEY &key1) const {
             return key1.key == key && key1.stream == stream;
@@ -41,6 +46,8 @@ namespace std {
         }
     };
 }
+
+LogEntry& operator<<(LogEntry& le, const TASK_KEY& key);
 
 namespace mgpu {
     using namespace std::chrono;
@@ -93,17 +100,20 @@ namespace mgpu {
 
         void insert_cmd(const std::shared_ptr<Command> &cmd) {
             pid_t pid = cmd->get_pid();
-            TASK_KEY key{cmd->get_type(), cmd->get_stream()};
+            TASK_KEY key(cmd->get_pid(), cmd->get_device(), cmd->get_stream());
+            dout(DEBUG) << "pid" << pid << " start inser cmd, key is: " << key << dendl;
             mlocks.lock();
             if (llocks.count(key)) {
                 // has list
                 std::lock_guard<std::mutex> lk(*llocks[key]);
                 mlocks.unlock();
+                dout(DEBUG)<<" just push_back " << key << dendl;
                 tasks[key].push_back(cmd);
                 return;
             } else {
                 // has no list
                 if(pid_keys.count(pid) == 0) {
+                    dout(DEBUG)<<"pid: " << pid << " not exist " << dendl;
                     // insert pid
                     pid_keys[pid] = unordered_set<TASK_KEY>();
                     tasks[key] = TASK_LIST{};
@@ -112,6 +122,7 @@ namespace mgpu {
                 // insert list
                 std::lock_guard<std::mutex> lk(*llocks[key]);
                 mlocks.unlock();
+                dout(DEBUG) << "key: " << key << " is insert" << dendl;
                 tasks[key].push_back(cmd);
             }
         }
@@ -141,6 +152,7 @@ namespace mgpu {
             mlocks.lock();
             if(pid_keys.count(pid) == 0)
                 return;
+            dout(DEBUG) << "pid : " << pid << " is cleared" << dendl;
             for(auto& key : pid_keys[pid])
             {
                 auto tmp = llocks[key];
@@ -161,6 +173,14 @@ namespace mgpu {
         std::unordered_map<uint, unordered_set<TASK_KEY>> pid_keys; // pid - stream map
         Jobs pending;
     };
+} // namespace mgpu
+
+#ifndef LOG_ENTRY_TASK_KEY_
+#define LOG_ENTRY_TASK_KEY_
+inline LogEntry& operator<<(LogEntry& le, const TASK_KEY& key){
+    le << "(pid<<16+device):" << to_string(key.key) << " stream: " << key.stream;
+    return le;
 }
+#endif
 
 #endif //FASTGPU_TASK_H

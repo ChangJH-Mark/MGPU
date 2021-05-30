@@ -54,8 +54,6 @@ extern "C" __global__ void calculate_tempProxy(int iteration,  //number of itera
         int sm_id = get_smid();
         if (sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-        } else {
-            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
         }
     }
     __syncthreads();
@@ -68,7 +66,6 @@ extern "C" __global__ void calculate_tempProxy(int iteration,  //number of itera
 // detect if finished blocks over boundary
         if (leader) {
             index = atomicAdd(&finished, ITERS);
-            printf("block %d claim real block %d\n", blockIdx.x, index);
             if (index >= blocks) {
                 terminate = true;
             }
@@ -79,9 +76,6 @@ extern "C" __global__ void calculate_tempProxy(int iteration,  //number of itera
         int high_boundary = min(index + ITERS, blocks);
         for (int i = index; i < high_boundary; i++) {
             uint3 blockIDX = make_uint3(i % gridDIM.x, (i / gridDIM.x) % gridDIM.y, (i / (gridDIM.x * gridDIM.y)));
-            if (leader) {
-                printf("worker block %d start do real block x %d y %d z %d\n", blockIdx.x, blockIDX.x, blockIDX.y, blockIDX.z);
-            }
             // real kernel
             //matrixMul(C, A, B, wA, wB, blockIDX, gridDIM);
             calculate_temp(iteration, power, temp_src, temp_dst, grid_cols, grid_rows, border_cols, border_rows, Cap,

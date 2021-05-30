@@ -44,8 +44,6 @@ find_index_kernelProxy(double *arrayX, double *arrayY, double *CDF, double *u, d
         int sm_id = get_smid();
         if (sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-        } else {
-            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
         }
     }
     __syncthreads();
@@ -58,7 +56,6 @@ find_index_kernelProxy(double *arrayX, double *arrayY, double *CDF, double *u, d
 // detect if finished blocks over boundary
         if (leader) {
             index = atomicAdd(&finished, ITERS);
-            printf("block %d claim real block %d\n", blockIdx.x, index);
             if (index >= blocks) {
                 terminate = true;
             }
@@ -96,8 +93,6 @@ normalize_weights_kernelProxy(double *weights, int Nparticles, double *partial_s
         int sm_id = get_smid();
         if (sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-        } else {
-            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
         }
     }
     __syncthreads();
@@ -110,7 +105,6 @@ normalize_weights_kernelProxy(double *weights, int Nparticles, double *partial_s
 // detect if finished blocks over boundary
         if (leader) {
             index = atomicAdd(&finished, ITERS);
-            printf("block %d claim real block %d\n", blockIdx.x, index);
             if (index >= blocks) {
                 terminate = true;
             }
@@ -145,8 +139,6 @@ extern "C" __global__ void sum_kernelProxy(double *partial_sums, int Nparticles,
         int sm_id = get_smid();
         if (sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-        } else {
-            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
         }
     }
     __syncthreads();
@@ -159,7 +151,6 @@ extern "C" __global__ void sum_kernelProxy(double *partial_sums, int Nparticles,
 // detect if finished blocks over boundary
         if (leader) {
             index = atomicAdd(&finished, ITERS);
-            printf("block %d claim real block %d\n", blockIdx.x, index);
             if (index >= blocks) {
                 terminate = true;
             }
@@ -198,8 +189,6 @@ likelihood_kernelProxy(double *arrayX, double *arrayY, double *xj, double *yj, d
         int sm_id = get_smid();
         if (sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-        } else {
-            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
         }
     }
     __syncthreads();
@@ -212,7 +201,6 @@ likelihood_kernelProxy(double *arrayX, double *arrayY, double *xj, double *yj, d
 // detect if finished blocks over boundary
         if (leader) {
             index = atomicAdd(&finished, ITERS);
-            printf("block %d claim real block %d\n", blockIdx.x, index);
             if (index >= blocks) {
                 terminate = true;
             }

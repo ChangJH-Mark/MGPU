@@ -6,8 +6,10 @@
 #include "server/scheduler.h"
 #include "server/receiver.h"
 #include "server/task.h"
+#include "common/Log.h"
 #include <functional>
 
+shared_ptr<LogPool> logger = make_shared<LogPool>(DEBUG);
 using namespace mgpu;
 
 Server *Server::single_instance = nullptr;
@@ -31,6 +33,7 @@ Server *mgpu::get_server() {
     server->mod["conductor"] = server->conductor;
     server->mod["task_holder"] = server->task_holder;
     for (const auto &m : server->mod) {
+        dout(DEBUG) << "start init mod: " << m.first << dendl;
         m.second->init();
     }
 
@@ -55,4 +58,5 @@ void mgpu::destroy_server() {
     for (const auto &m : server->mod) {
         m.second->destroy();
     }
+    logger->destroy();
 }

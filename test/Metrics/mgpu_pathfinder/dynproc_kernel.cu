@@ -53,11 +53,7 @@ extern "C" __global__ void dynproc_kernelProxy(
         int sm_id = get_smid();
         if(sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-//            printf("worker block %d chose %d sm abandoned\n", blockIdx.x, get_smid());
         }
-//        else {
-//            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
-//        }
     }
     __syncthreads();
     if(terminate)
@@ -71,7 +67,6 @@ extern "C" __global__ void dynproc_kernelProxy(
         if(leader)
         {
             index = atomicAdd(&finished, ITERS);
-//            printf("block %d claim real block %d\n", blockIdx.x, index);
             if(index >= blocks) {
                 terminate = true;
             }
@@ -82,10 +77,6 @@ extern "C" __global__ void dynproc_kernelProxy(
         int high_boundary = min(index + ITERS, blocks);
         for(int i = index; i < high_boundary; i++)
         {
-//            if(leader)
-//            {
-//                printf("worker block %d start do real block %d\n", blockIdx.x, i);
-//            }
             uint3 blockIDX = make_uint3( i % grid.x, (i / grid.x) % grid.y, (i / (grid.x * grid.y)));
             dynproc_kernel(iteration,gpuWall,gpuSrc,gpuResults,cols,rows,startStep,border, blockIDX);
         }
