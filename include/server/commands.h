@@ -7,14 +7,16 @@
 #include <functional>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <atomic>
 #include "common/message.h"
 
 namespace mgpu {
     class Command {
     public:
         Command(AbMsg* m, uint cli) : type(m->type), msg(m), conn(cli), stream(m->stream), status(std::make_shared<bool>(false)) {
+            id = id_cnt++;
             device = m->key & 0xffff;
-            pid = type >> 16;
+            pid = m->key >> 16;
         }
         Command(const Command &) = delete;
         Command(Command &&origin)  noexcept {
@@ -36,6 +38,7 @@ namespace mgpu {
         uint get_device() const{ return device;}
         stream_t get_stream() const { return stream;}
         pid_t get_pid() const { return pid;}
+        uint get_id() const { return id;}
         template<class T> T* get_msg() { return (T*)msg;}
         template<class T> void finish(T);
         template<class T> void finish(T*, uint);
@@ -49,6 +52,8 @@ namespace mgpu {
         AbMsg* msg;
         uint device;
         stream_t stream;
+        uint id;
+        static std::atomic<uint> id_cnt;
     };
 
     template<class T>

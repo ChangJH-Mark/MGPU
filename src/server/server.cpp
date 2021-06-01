@@ -13,6 +13,7 @@ shared_ptr<LogPool> logger = make_shared<LogPool>(DEBUG);
 using namespace mgpu;
 
 Server *Server::single_instance = nullptr;
+std::atomic<uint> Command::id_cnt = 0;
 
 Server *mgpu::get_server() {
     if (Server::single_instance != nullptr) {

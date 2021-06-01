@@ -19,7 +19,7 @@
 #define NOTICE 2
 #define LOG 1
 
-#define dout(l) (LogEntry(logger, l, std::chrono::system_clock::now(), pthread_self(), __FILE__, __LINE__, __FUNCTION__))
+#define dout(l) (LogEntry(logger, l, std::chrono::system_clock::now(), pthread_self(), __FUNCTION__))
 #define  dendl e
 
 class log_endl {
@@ -84,8 +84,7 @@ private:
 
 class LogEntry {
 public:
-    LogEntry(const shared_ptr<LogPool> &p, int l, chrono::system_clock::time_point t, pthread_t tid, const string &file,
-             int line, const string &func)
+    LogEntry(const shared_ptr<LogPool> &p, int l, chrono::system_clock::time_point t, pthread_t tid,  const string &func)
             : pool(p), level(l), time(t) {
         message += to_string(level) + " ";
         time_t epoch_time = chrono::system_clock::to_time_t(t);
@@ -96,7 +95,7 @@ public:
         char micros[7] = {0};
         sprintf(micros, "%06d", chrono::duration_cast<chrono::microseconds>(t.time_since_epoch()).count() % 1000000);
         message += micros;
-        message += " " + to_string(tid) + " " + file + " " + to_string(line) + " " + func + " ";
+        message += " " + to_string(tid) + " " + func + "\t";
     }
 
     LogEntry &operator<<(const string& msg) {
@@ -104,11 +103,15 @@ public:
         return *this;
     }
 
-    LogEntry &operator<<(int msg) {
+    LogEntry &operator<<(const int &msg) {
         message += std::to_string(msg);
         return *this;
     }
-    LogEntry &operator<<(void *ptr) {
+    LogEntry &operator<<(const char* msg) {
+        message += msg;
+        return *this;
+    }
+    LogEntry &operator<<(const void * ptr) {
         std::stringstream ss;
         ss << hex << ptr;
         message += ss.str();

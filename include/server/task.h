@@ -101,7 +101,7 @@ namespace mgpu {
         void insert_cmd(const std::shared_ptr<Command> &cmd) {
             pid_t pid = cmd->get_pid();
             TASK_KEY key(cmd->get_pid(), cmd->get_device(), cmd->get_stream());
-            dout(DEBUG) << "pid" << pid << " start inser cmd, key is: " << key << dendl;
+            dout(DEBUG) << " start insert cmd:" << cmd->get_id() << ", key is: " << key << " type is " << get_type_msg(cmd->get_type()) << dendl;
             mlocks.lock();
             if (llocks.count(key)) {
                 // has list
@@ -178,7 +178,7 @@ namespace mgpu {
 #ifndef LOG_ENTRY_TASK_KEY_
 #define LOG_ENTRY_TASK_KEY_
 inline LogEntry& operator<<(LogEntry& le, const TASK_KEY& key){
-    le << "(pid<<16+device):" << to_string(key.key) << " stream: " << key.stream;
+    le << " pid:" << to_string(key.key >> 16) << " device: " << to_string(key.key & 0xffff) <<  " stream: " << key.stream;
     return le;
 }
 #endif

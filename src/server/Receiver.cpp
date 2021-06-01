@@ -24,7 +24,7 @@ void Receiver::init() {
     strcpy(server_address.sun_path, socket_address);
     if(access(mgpu::server_path, F_OK) == 0){
         unlink(mgpu::server_path);
-        std::cout << "socket path: " << mgpu::server_path << " already exist, delete" << std::endl;
+        dout(DEBUG) << "socket path: " << mgpu::server_path << " already exist, delete" << dendl;
     }
     if(0 > bind(server_socket, (struct sockaddr*) &server_address, SUN_LEN(&server_address))) {
         perror("fail to bind server socket");
@@ -86,7 +86,7 @@ void Receiver::push_command(uint conn) {
         case MSG_MATRIX_MUL_GPU:
             break;
         default:
-            std::cerr << "fail to recognize message info! " << *api << std::endl;
+            dout(DEBUG) << " fail to recognize message info! " << " api: " <<  *api << " key: " << *(api + 1) << dendl;
             exit(EXIT_FAILURE);
     }
     auto cmd = make_shared<Command>((AbMsg*)msg, conn);
@@ -133,16 +133,20 @@ void Receiver::do_accept() {
         int len = epoll_wait(epfd, events, MAX_CONNECTION, -1);
         for (int i = 0; i < len; i++) {
             if (events[i].data.fd == stopfd[0]) {
+                dout(DEBUG) << " server close " << stopfd[0] << dendl;
                 close(stopfd[0]);
                 break;
             } else if (events[i].data.fd == server_socket) {
+                dout(DEBUG) << " new connection " << dendl;
                 do_newconn();
             } else if (events[i].events & EPOLLRDHUP) {
+                dout(DEBUG) << " get EPOLLRDHUP in " << events[i].data.fd << dendl;
                 do_close(events[i].data.fd);
             } else if (events[i].events & EPOLLIN) {
+                dout(DEBUG) << " get EPOLLIN in " << events[i].data.fd << dendl;
                 do_worker(events[i].data.fd);
             } else {
-                cout << "unexpected epoll events happened" << endl;
+                dout(DEBUG) << " unexpected epoll events happened " << dendl;
             }
         } // while(!stopped)
     }
