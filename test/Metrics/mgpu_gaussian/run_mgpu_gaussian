@@ -1,0 +1,3 @@
+#!/bin/bash
+./mgpu_gaussian -f data/gaussian/matrix4.txt
+./mgpu_gaussian -s 16

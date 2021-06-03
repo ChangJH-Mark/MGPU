@@ -9,6 +9,9 @@ if(${BUILD_TEST})
     add_executable(sc_gpu streamcluster/streamcluster_header.cu streamcluster/streamcluster_cuda.cu streamcluster/streamcluster_cuda_cpu.cpp)
     target_link_libraries(sc_gpu cuda)
 
+    add_executable(gaussian gaussian/gaussian.cu)
+    target_link_libraries(gaussian cudart)
+
     # particlefilter
     add_executable(particlefilter_float particlefilter/ex_particle_CUDA_float_seq.cu)
     add_executable(particlefilter_naive particlefilter/ex_particle_CUDA_naive_seq.cu)
@@ -23,10 +26,10 @@ if(${BUILD_TEST})
 
     # install executable, scripts, test data
     # executable
-    install(TARGETS pathfinder hotspot sc_gpu particlefilter_float
+    install(TARGETS pathfinder hotspot sc_gpu particlefilter_float gaussian
             DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)
     # run scripts
-    install(PROGRAMS pathfinder/run_pathfinder hotspot/run_hotspot streamcluster/run_scgpu particlefilter/run_particlefilter
+    install(PROGRAMS pathfinder/run_pathfinder hotspot/run_hotspot streamcluster/run_scgpu particlefilter/run_particlefilter gaussian/run_gaussian
             DESTINATION ${EXECUTABLE_OUTPUT_PATH}/test)
     # test data
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/data
@@ -38,3 +41,4 @@ add_subdirectory(mgpu_hotspot)
 add_subdirectory(mgpu_pathfinder)
 add_subdirectory(mgpu_streamcluster)
 add_subdirectory(mgpu_particlefilter)
+add_subdirectory(mgpu_gaussian)
