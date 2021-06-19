@@ -25,7 +25,9 @@ void Scheduler::do_scan() {
         Task::Jobs undojobs;
         Task::Jobs jobs = TASK_HOLDER->fetch();
         for(auto& job : jobs){
+            dout(DEBUG) << " set conduct job " << job.second->get_id() << dendl;
             CONDUCTOR->conduct(job.second);
+            dout(DEBUG) << " register conduct job " << job.second->get_id() << dendl;
             TASK_HOLDER->register_doing(job.first, job.second);
         }
         TASK_HOLDER->put_back(undojobs);

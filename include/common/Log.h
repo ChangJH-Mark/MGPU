@@ -31,7 +31,7 @@ extern shared_ptr<LogPool> logger;
 
 class LogPool {
 public:
-    explicit LogPool(int level) : log_level(level), max_out(20), pool(2, 5) {
+    explicit LogPool(int level) : log_level(level), max_out(200), pool(2, 5) {
         pool.commit(&LogPool::flush, this);
     }
 
@@ -86,7 +86,7 @@ class LogEntry {
 public:
     LogEntry(const shared_ptr<LogPool> &p, int l, chrono::system_clock::time_point t, pthread_t tid,  const string &func)
             : pool(p), level(l), time(t) {
-        message += to_string(level) + " ";
+        message += "[" + to_string(level) + " ";
         time_t epoch_time = chrono::system_clock::to_time_t(t);
         auto *ptm = std::localtime(&epoch_time);
         char times[40] = {0};
@@ -95,7 +95,7 @@ public:
         char micros[7] = {0};
         sprintf(micros, "%06d", chrono::duration_cast<chrono::microseconds>(t.time_since_epoch()).count() % 1000000);
         message += micros;
-        message += " " + to_string(tid) + " " + func + "\t";
+        message += " " + to_string(tid) + "] " + func + " ";
     }
 
     LogEntry &operator<<(const string& msg) {

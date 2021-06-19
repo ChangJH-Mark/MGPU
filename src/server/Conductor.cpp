@@ -72,6 +72,7 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
 //    cudaCheck(::cudaSetDevice(cmd->get_device()));
 //    cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
+    dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished " << dendl;
 }
 
 void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
