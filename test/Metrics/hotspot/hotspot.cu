@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <chrono>
 #include <assert.h>
 
 #ifdef RD_WG_SIZE_0_0
@@ -268,12 +269,12 @@ void usage(int argc, char **argv)
 
 int main(int argc, char** argv)
 {
-    clock_t start = clock();
+    auto start = std::chrono::steady_clock::now();
     printf("WG size of kernel = %d X %d\n", BLOCK_SIZE, BLOCK_SIZE);
 
     run(argc,argv);
-    clock_t end = clock();
-    printf("cost clocks %ld \n", (end - start));
+    auto end = std::chrono::steady_clock::now();
+    printf("cost usec %ld \n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
     return EXIT_SUCCESS;
 }
 

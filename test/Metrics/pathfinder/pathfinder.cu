@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <chrono>
 #include <assert.h>
 
 #define BLOCK_SIZE 256
@@ -209,14 +210,14 @@ int calc_path(int *gpuWall, int *gpuResult[2], int rows, int cols, \
 
 int main(int argc, char** argv)
 {
-    clock_t start = clock();
+    auto start =std::chrono::steady_clock::now();
     int num_devices;
     cudaGetDeviceCount(&num_devices);
     if (num_devices > 1) cudaSetDevice(DEVICE);
 
     run(argc,argv);
-    clock_t end = clock();
-    printf("cost clock %ld \n", (end - start));
+    auto end = std::chrono::steady_clock::now();
+    printf("cost usec %ld \n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
     return EXIT_SUCCESS;
 }
 

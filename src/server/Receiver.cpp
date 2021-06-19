@@ -5,6 +5,7 @@
 #include "server/receiver.h"
 #include "server/server.h"
 #include "server/task.h"
+#include "server/conductor.h"
 #include "common/IPC.h"
 #include <unistd.h>
 #include <sys/un.h>
@@ -94,7 +95,16 @@ void Receiver::push_command(uint conn) {
 }
 
 void Receiver::do_worker(uint conn) {
-    pool.commit(&Receiver::push_command, this, conn);
+    if(SCHEDULER)
+        pool.commit(&Receiver::push_command, this, conn);
+    else{
+        dout(NOTICE) << "=====NO SCHEDULER MODULE=====" << dendl;
+        char * msg = new char[MAX_MSG_SIZE];
+        size_t size = recv(conn, msg, MAX_MSG_SIZE, 0);
+        msg[size] = 0;
+        auto cmd = make_shared<Command>((AbMsg*)msg, conn);
+        CONDUCTOR->conduct(cmd);
+    }
 }
 
 void Receiver::do_newconn() {

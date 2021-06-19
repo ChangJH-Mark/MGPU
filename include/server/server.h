@@ -19,6 +19,7 @@
 #define TASK_HOLDER get_server()->get_task()
 #define CONDUCTOR get_server()->get_conductor()
 #define DEVICES get_server()->get_device()
+#define SCHEDULER get_server()->get_scheduler()
 
 using namespace std;
 namespace mgpu {

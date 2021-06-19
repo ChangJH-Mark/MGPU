@@ -18,6 +18,7 @@
 #include "cuda.h"
 #include <string.h>
 #include <math.h>
+#include <chrono>
 
 #ifdef RD_WG_SIZE_0_0
 #define MAXBLOCKSIZE RD_WG_SIZE_0_0
@@ -91,6 +92,7 @@ create_matrix(float *m, int size){
 
 int main(int argc, char *argv[])
 {
+    auto start = std::chrono::steady_clock::now();
     printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", MAXBLOCKSIZE, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
     int verbose = 1;
     int i, j;
@@ -193,6 +195,8 @@ int main(int argc, char *argv[])
     free(m);
     free(a);
     free(b);
+    auto end = std::chrono::steady_clock::now();
+    printf("cost usec %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 }
 /*------------------------------------------------------
  ** PrintDeviceProperties

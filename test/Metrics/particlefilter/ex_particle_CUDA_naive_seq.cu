@@ -4,6 +4,7 @@
  * @brief Particle filter implementation in C/OpenMP 
  */
 #include <stdio.h>
+#include <chrono>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -613,7 +614,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 	free(ind);
 }
 int main(int argc, char * argv[]){
-	clock_t sta = clock();
+	auto sta = std::chrono::steady_clock::now();
 	char* usage = "naive.out -x <dimX> -y <dimY> -z <Nfr> -np <Nparticles>";
 	//check number of arguments
 	if(argc != 9)
@@ -692,7 +693,7 @@ int main(int argc, char * argv[]){
 	
 	free(seed);
 	free(I);
-	clock_t end = clock();
-    printf("clocks: %ld\n", end - sta);
+	auto end = std::chrono::steady_clock::now();
+    printf("cost usec %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(end - sta).count());
 	return 0;
 }
