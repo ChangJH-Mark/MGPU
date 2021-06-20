@@ -10,9 +10,11 @@
 #include <cstring>
 using namespace std;
 
-#define cudaCheck(x) if((x)!=cudaSuccess) { \
-cerr << __FUNCTION__ <<" cuda error: " << x << " message: " << cudaGetErrorString(x) << endl; \
-exit(EXIT_FAILURE);\
+inline void cudaCheck(cudaError_t x) {
+    if ((x) != cudaSuccess) {
+        cerr << __FUNCTION__ << " cuda error: " << x << " message: " << cudaGetErrorString(x) << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 template<typename T>

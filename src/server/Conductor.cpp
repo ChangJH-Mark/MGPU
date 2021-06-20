@@ -125,6 +125,7 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&cuModule, msg->ptx)));
     CUfunction func;
     cudaCheck(static_cast<cudaError_t>(::cuModuleGetFunction(&func, cuModule, (string(msg->kernel) + "Proxy").c_str())));
+    dout(DEBUG) << "ptx: " << msg->ptx << " kernel: " << std::string(msg->kernel) << " address :" << func << dendl;
     msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
                                  (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
     void *extra[] = {
@@ -142,6 +143,7 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
                                                         msg->conf.share_memory,
                                                         cmd->get_stream(),
                                                         NULL, extra)));
+    cudaCheck(static_cast<cudaError_t>(cuModuleUnload(cuModule)));
     cmd->finish<bool>(true);
 }
 
