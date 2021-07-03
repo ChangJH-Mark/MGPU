@@ -19,3 +19,5 @@ include_directories(./include ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 add_subdirectory(src)
 add_subdirectory(test)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include
+        DESTINATION ${OUTPUT_ROOT})
