@@ -21,12 +21,6 @@ void mgpu::Device::init() {
         auto gpu = new GPU;
         init_gpu(gpu, dev);
         gpu_list.push_back(gpu);
-        std::array<cudaStream_t, MAX_STREAMS> streams{};
-        for(int j = 0; j < MAX_STREAMS; j++){
-            cudaCheck(cudaStreamCreate(&streams[j]));
-            std::cout << __FUNCTION__ << " create device: " << dev << " stream: " << j << " ptr: " << streams[j] << std::endl;
-        }
-        gpu_streams[dev] = streams;
     }
 }
 
@@ -46,6 +40,7 @@ void mgpu::Device::init_gpu(GPU *gpu, uint id) {
     gpu->sms = dev_prop.multiProcessorCount;
     gpu->share_mem = dev_prop.sharedMemPerMultiprocessor;
     gpu->global_mem = dev_prop.totalGlobalMem;
+    gpu->const_mem = dev_prop.totalConstMem;
 }
 
 void mgpu::Device::observe() {
@@ -59,6 +54,7 @@ void mgpu::Device::observe() {
         cout << "stream multiprocessor number : " << iter->sms << endl;
         cout << "share memory per sm(bytes) : " << iter->share_mem << endl;
         cout << "global_memory(MiB) : " << (iter->global_mem >> 10) << endl;
+        cout << "const memory(MiB) : " << (iter->const_mem >> 10) << endl;
         cout << "--------------------------------" << endl;
     }
 }

@@ -30,7 +30,7 @@ namespace mgpu {
         bool send(CudaMemsetMsg*);
         bool send(CudaMemcpyMsg*);
         bool send(CudaLaunchKernelMsg*);
-        bool send(CudaStreamCreateMsg*, stream_t * streams);
+        bool send(CudaStreamCreateMsg*, stream_t * stream);
         bool send(CudaStreamSyncMsg *msg);
         bool send(CudaEventCreateMsg*, event_t * event);
         bool send(CudaEventDestroyMsg*);

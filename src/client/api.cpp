@@ -55,10 +55,10 @@ bool mgpu::cudaMemcpy(void *dst, const void * src, size_t count, ::cudaMemcpyKin
     return ipc_cli->send(&msg);
 }
 
-bool mgpu::cudaStreamCreate(stream_t *streams, uint num) {
+bool mgpu::cudaStreamCreate(stream_t *stream) {
     auto ipc_cli = IPCClient::get_client();
-    CudaStreamCreateMsg msg{MSG_CUDA_STREAM_CREATE, uint(pid << 16) + default_device, DEFAULT_STREAM_, num};
-    return ipc_cli->send(&msg, streams);
+    CudaStreamCreateMsg msg{MSG_CUDA_STREAM_CREATE, uint(pid << 16) + default_device, DEFAULT_STREAM_};
+    return ipc_cli->send(&msg, stream);
 }
 
 bool mgpu::cudaStreamSynchronize(stream_t stream) {

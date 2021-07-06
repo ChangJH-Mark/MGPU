@@ -14,6 +14,7 @@
 #include <memory>
 #include <map>
 #include "ThreadPool.h"
+using namespace std;
 
 #define DEBUG 3
 #define NOTICE 2

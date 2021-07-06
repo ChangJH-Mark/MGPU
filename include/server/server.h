@@ -15,6 +15,7 @@
 #include <condition_variable>
 #include "mod.h"
 #include "commands.h"
+#include "common/Log.h"
 
 #define TASK_HOLDER get_server()->get_task()
 #define CONDUCTOR get_server()->get_conductor()

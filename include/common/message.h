@@ -121,7 +121,6 @@ namespace mgpu {
     } CudaMemcpyMsg;
 
     typedef struct CudaStreamCreateMsg : public AbMsg {
-        uint num; // streams num
     } CudaStreamCreateMsg;
 
     typedef struct CudaStreamSyncMsg : public AbMsg {

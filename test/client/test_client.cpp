@@ -15,7 +15,7 @@ void test_sm() {
     void *dev_ptr1 = mgpu::cudaMalloc(size);
     void *host_ptr1 = mgpu::cudaMallocHost(size);
     mgpu::stream_t stream;
-    mgpu::cudaStreamCreate(&stream, 1);
+    mgpu::cudaStreamCreate(&stream);
     mgpu::cudaLaunchKernel({{block_num}, {1}, 0, stream}, "/opt/custom/ptx/specify_sm.ptx", "sm_ids", dev_ptr1);
     mgpu::cudaStreamSynchronize(stream);
     mgpu::cudaMemcpy(host_ptr1, dev_ptr1, size, cudaMemcpyDeviceToHost);
@@ -35,7 +35,7 @@ void test_vecAdd() {
     mgpu::cudaMemset(dev_ptr2, 0x2, N);
     void *host_ptr = mgpu::cudaMallocHost(N);
     mgpu::stream_t streams;
-    mgpu::cudaStreamCreate(&streams, 1);
+    mgpu::cudaStreamCreate(&streams);
     printf("stream: %d\n", streams);
     printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n", dev_ptr1, dev_ptr2, host_ptr);
     mgpu::cudaLaunchKernel({{200}, {10}, 0, streams}, "/opt/custom/ptx/vecAdd.ptx", "vecAdd", dev_ptr1, dev_ptr2,
@@ -70,7 +70,7 @@ void test_matrixMul() {
     dim3 threads(block_size, block_size, 1);
     dim3 grid(wB / threads.x, hA / threads.y, 1);
     mgpu::stream_t stream;
-    mgpu::cudaStreamCreate(&stream, 1);
+    mgpu::cudaStreamCreate(&stream);
     mgpu::cudaLaunchKernel({grid, threads, 0, stream}, "/opt/custom/ptx/matrixMul.ptx", "matrixMul", matC, matA, matB,
                            wA, wB);
     mgpu::cudaStreamSynchronize(stream);

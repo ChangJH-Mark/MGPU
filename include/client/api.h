@@ -49,7 +49,7 @@ namespace mgpu {
 
     // communicate with server, call cudaStreamCreate
     // create @num streams and save handler in @streams
-    bool cudaStreamCreate(stream_t * streams, uint num);
+    bool cudaStreamCreate(stream_t * stream);
 
     // communicate with server, call cudaStreamSynchronize on @stream
     bool cudaStreamSynchronize(stream_t stream);

@@ -3,7 +3,6 @@
 //
 
 #include "server/scheduler.h"
-#include "server/task.h"
 
 using namespace mgpu;
 
@@ -20,18 +19,6 @@ void Scheduler::run() {
 }
 
 void Scheduler::do_scan() {
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
-    while (!stopped) {
-        Task::Jobs undojobs;
-        Task::Jobs jobs = TASK_HOLDER->fetch();
-        for(auto& job : jobs){
-            dout(DEBUG) << " set conduct job " << job.second->get_id() << dendl;
-            CONDUCTOR->conduct(job.second);
-            dout(DEBUG) << " register conduct job " << job.second->get_id() << dendl;
-            TASK_HOLDER->register_doing(job.first, job.second);
-        }
-        TASK_HOLDER->put_back(undojobs);
-    } // while loop
 }
 
 void Scheduler::destroy() {

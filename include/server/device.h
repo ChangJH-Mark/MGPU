@@ -9,9 +9,6 @@
 #include <map>
 #include <unistd.h>
 #include "mod.h"
-#ifndef MAX_STREAMS
-#define MAX_STREAMS 32
-#endif
 
 namespace mgpu {
     class Device : public Module {
@@ -23,17 +20,13 @@ namespace mgpu {
             uint sms;
             uint share_mem;
             uint global_mem;
+            uint const_mem;
         }GPU;
 
         int num = 0;
         std::list<GPU*> gpu_list;
-        std::map<uint, std::array<cudaStream_t, MAX_STREAMS>> gpu_streams;
 
     public:
-        std::array<cudaStream_t, MAX_STREAMS> getStream(uint device)
-        {
-            return gpu_streams[device];
-        }
         int counts() const {return num;}
     public:
         Device() =default;

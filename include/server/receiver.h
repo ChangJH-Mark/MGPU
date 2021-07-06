@@ -7,6 +7,7 @@
 #include <thread>
 #include <atomic>
 #include <map>
+#include <vector>
 #include <unordered_map>
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -15,7 +16,8 @@
 #include "common/ThreadPool.h"
 #include "commands.h"
 #include "server/server.h"
-#define MAX_CONNECTION 100
+#include "server/proxy_worker.h"
+#define E_CNT 4
 
 namespace mgpu{
     class Receiver : public Module {
@@ -32,7 +34,6 @@ namespace mgpu{
         void do_accept();
         void do_worker(uint conn);
         void do_newconn();
-        void do_close(uint conn);
         void push_command(uint conn);
 
     private:
@@ -41,7 +42,7 @@ namespace mgpu{
         ThreadPool pool;
         int epfd;
         int stopfd[2];
-        unordered_map<pid_t, int> p_conns; // pid - connections
+        vector<shared_ptr<ProxyWorker>> workers;
     };
 }
 #endif //FASTGPU_RECEIVER_H

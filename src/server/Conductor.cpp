@@ -3,16 +3,15 @@
 //
 #include <cuda_runtime.h>
 #include <cuda.h>
-#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <string>
-#include "server/task.h"
 #include "server/conductor.h"
 #include "common/helper.h"
 #include "common/Log.h"
+#include "server/server.h"
+#include "server/device.h"
 
-#define MAX_STREAMS 32
 #define WORKER_GRID 60
 
 using namespace mgpu;
@@ -150,11 +149,9 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " create stream at device: " << cmd->get_device() << dendl;
-    auto msg = cmd->get_msg<CudaStreamCreateMsg>();
-    auto ret = TASK_HOLDER->create_streams(cmd->get_msg<CudaStreamCreateMsg>());
-    if(ret == nullptr)
-        cmd->finish<stream_t>(nullptr, 0);
-    cmd->finish<stream_t>(ret, msg->num);
+    cudaStream_t ret;
+    cudaCheck(cudaStreamCreate(&ret));
+    cmd->finish<stream_t>(ret);
 }
 
 void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {

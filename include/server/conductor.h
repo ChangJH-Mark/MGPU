@@ -6,6 +6,7 @@
 #define FASTGPU_CONDUCTOR_H
 #include <future>
 #include <unordered_map>
+#include <map>
 #include "common/ThreadPool.h"
 #include "server/commands.h"
 #include "mod.h"
