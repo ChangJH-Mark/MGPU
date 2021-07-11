@@ -32,18 +32,14 @@ extern shared_ptr<LogPool> logger;
 
 class LogPool {
 public:
-    explicit LogPool(int level) : log_level(level), max_out(200), pool(2, 5) {
+    explicit LogPool(int level) : log_level(level), max_out(200), pool(2, 5), stopped(false) {
         pool.commit(&LogPool::flush, this);
     }
 
     void destroy() {
+        stopped = true;
+        cv.notify_all();
         pool.stop();
-        mut.lock();
-        for (auto &log : logs) {
-            cout << log.second << "\n";
-        }
-        cout << std::flush;
-        mut.unlock();
     }
 
 public:
@@ -59,6 +55,7 @@ private:
     map<chrono::system_clock::time_point, string> logs;
     std::mutex mut;
     std::condition_variable cv;
+    atomic<bool> stopped;
 
     void insert(chrono::system_clock::time_point time, string& msg) {
         mut.lock();
@@ -68,11 +65,11 @@ private:
     }
 
     void flush() {
-        while (1) {
+        while (!stopped) {
             std::unique_lock<std::mutex> ulk(mut);
-            cv.wait(ulk, [&]() -> bool { return !logs.empty(); });
+            cv.wait(ulk, [&]() -> bool { return !logs.empty() || stopped; });
             int count = 0;
-            for (auto it = logs.begin(); it != logs.end() && count < max_out; count++) {
+            for (auto it = logs.begin(); it != logs.end() && (count < max_out || stopped); count++) {
                 cout << it->second << "\n";
                 logs.erase(it++);
             }

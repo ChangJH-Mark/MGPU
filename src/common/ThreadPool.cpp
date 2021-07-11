@@ -9,7 +9,6 @@ ThreadPool::ThreadPool(uint init_num, uint max_num) : max_num(max_num), stopped(
     {
         idlThrNums++;
         workers.emplace_back(&ThreadPool::worker, this);
-        workers[workers.size() - 1].detach();
     }
 }
 

@@ -22,7 +22,7 @@
 namespace mgpu{
     class Receiver : public Module {
     public:
-        Receiver() : pool(3, 20){
+        Receiver(){
             joinable = true;
         };
         void init() override;
@@ -39,7 +39,6 @@ namespace mgpu{
     private:
         uint server_socket{};
         std::thread listener;
-        ThreadPool pool;
         int epfd;
         int stopfd[2];
         vector<shared_ptr<ProxyWorker>> workers;

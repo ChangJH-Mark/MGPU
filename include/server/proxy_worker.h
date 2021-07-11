@@ -20,6 +20,8 @@ namespace mgpu {
         void stop(){
             write(pipefd[1], "stop", 4);
             close(pipefd[1]);
+            if(joinable())
+                this->join();
         };
 
     private:

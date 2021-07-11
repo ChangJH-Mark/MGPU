@@ -12,15 +12,14 @@
 class ThreadPool {
 public:
     ThreadPool(uint init_num, uint max_num);
-    ~ThreadPool() {
-        stopped = false;
+    void stop() {
+        stopped = true;
         cv.notify_all();
-        for(auto & w : workers){
+        for(auto & w : workers) {
             if(w.joinable())
                 w.join();
         }
     }
-    void stop() {stopped = true; cv.notify_all();}
 
     template<class F, typename... Args>
     auto commit(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type>;
@@ -29,7 +28,6 @@ private:
     void worker();
     void addWorker() {
         workers.emplace_back(&ThreadPool::worker, this);
-        workers[workers.size() - 1].detach();
         idlThrNums++;
     }
 
@@ -57,7 +55,7 @@ auto ThreadPool::commit(F&& f, Args&&... args) -> std::future<typename std::resu
     {
         std::unique_lock<std::mutex> lock(queue_lock);
         tasks.emplace([task] {(*task)();});
-        if(idlThrNums == 0 && workers.size() < max_num)
+        if(idlThrNums == 0 && workers.size() < max_num && !stopped)
             addWorker();
     }
     cv.notify_one();
