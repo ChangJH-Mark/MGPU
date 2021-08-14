@@ -14,7 +14,7 @@
 namespace mgpu {
     class Conductor : public Module{
     public:
-        Conductor() : pool(10, 50){
+        Conductor(){
             joinable = false;
         };
 
@@ -22,15 +22,13 @@ namespace mgpu {
         virtual void run() override{};
         virtual void destroy() override{
             stopped = true;
-            pool.stop();
         };
         virtual void join() override{};
 
     public:
-        std::shared_ptr<bool> conduct(const std::shared_ptr<Command>& cmd);
+        void conduct(const std::shared_ptr<Command>& cmd);
 
     private:
-        ThreadPool pool;
         std::unordered_map<void*, int> shms_id;
         std::map<int, void (Conductor::*)(const std::shared_ptr<Command>&)> func_table;
 
@@ -52,6 +50,7 @@ namespace mgpu {
         void do_cudaeventelapsedtime(const std::shared_ptr<Command>& cmd);
 
         void do_matrixmultgpu(const std::shared_ptr<Command>& cmd);
+        void do_multask(const std::shared_ptr<Command>& cmd);
     };
 }
 #endif //FASTGPU_CONDUCTOR_H

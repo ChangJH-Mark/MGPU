@@ -25,6 +25,11 @@
 #define MSG_CUDA_EVENT_ELAPSED_TIME 0xf
 #define FUNCTION_DEFINED_MASK_ 0x10000
 #define MSG_MATRIX_MUL_GPU (FUNCTION_DEFINED_MASK_ | 0x1)
+#define MSG_MUL_TASK (FUNCTION_DEFINED_MASK_ | 0x2)
+
+#define MAX_HOST_ADDR_NUM 4
+#define MAX_DEVICE_ADDR_NUM 4
+#define MAX_TASK_NUM 4
 
 inline const char *get_type_msg(uint type) {
     switch (type) {
@@ -60,6 +65,8 @@ inline const char *get_type_msg(uint type) {
             return " __cuda_event_elapsed_time__ ";
         case MSG_MATRIX_MUL_GPU:
             return " __matrix_mul_gpu__ ";
+        case MSG_MUL_TASK:
+            return " __mul_task__ ";
     }
 }
 
@@ -80,6 +87,18 @@ namespace mgpu {
         int width = 0;
         int height = 0;
     } Matrix;
+
+    typedef struct Task{
+        uint hdn; // data number in host
+        uint dn;  // extra device memory num needed
+        size_t hds[MAX_HOST_ADDR_NUM]; // data size in host
+        size_t dev_alloc_size[MAX_DEVICE_ADDR_NUM]; // extra device memory size
+        LaunchConf conf;
+        char ptx[128]{}; // ptx ptx
+        char kernel[128]{}; // kernel symbol
+        char param[1024]{}; // pre-filled with host data address and extra device mem empty addr
+        size_t p_size{};    // param size
+    } Task;
 
     typedef struct AbMsg{
     public:
@@ -155,6 +174,11 @@ namespace mgpu {
         size_t p_size{};    // param p_size
     } CudaLaunchKernelMsg;
 
+    typedef struct MulTaskMsg : public AbMsg {
+        Task task[MAX_TASK_NUM];
+        uint task_num;
+    } MulTaskMsg;
+
     typedef struct MatrixMulMsg : public AbMsg {
         Matrix A;
         Matrix B;
@@ -167,6 +191,11 @@ namespace mgpu {
         void *ptr; // unified memory address
         int shmid;  // share memory id
     } CudaMallocHostRet;
+
+    typedef struct MulTaskRet {
+        int success;
+        char msg[1024]; // error message
+    }MulTaskRet;
 }
 
 #endif //FASTGPU_MESSAGE_H

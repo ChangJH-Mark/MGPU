@@ -38,6 +38,7 @@ namespace mgpu {
         bool send(CudaEventSyncMsg*);
         bool send(CudaEventElapsedTimeMsg*, float *ms);
         std::future<void *> send(MatrixMulMsg *msg);
+        std::future<MulTaskRet> send(MulTaskMsg *msg);
         IPCClient() : conn(-1) {} // only make_shared use it
     public:
         ~IPCClient(){ if(conn != -1) close(conn);}

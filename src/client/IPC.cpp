@@ -187,5 +187,16 @@ std::future<void*> IPCClient::send(MatrixMulMsg *msg) {
         }
         return ret.ptr;
     };
-    return std::move(std::async(func));
+    return std::async(func);
+}
+
+std::future<MulTaskRet> IPCClient::send(MulTaskMsg *msg) {
+    auto cli = connect();
+    socket_send(cli, msg, sizeof(MulTaskMsg), 0, "fail to send MulTaskMulGPU message");
+    auto func = [cli, ipc = single_instance]() -> MulTaskRet {
+        MulTaskRet ret;
+        ipc->socket_recv(cli, &ret, sizeof(ret), 0, "error to receive MulTaskMulGPU return");
+        return ret;
+    };
+    return std::async(func);
 }

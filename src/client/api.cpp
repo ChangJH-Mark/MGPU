@@ -107,3 +107,9 @@ std::future<void*> mgpu::matrixMul_MGPU(Matrix A, Matrix B, LaunchConf launchCon
     MatrixMulMsg msg{MSG_MATRIX_MUL_GPU, uint(pid << 16) + default_device, DEFAULT_STREAM_, A, B, launchConf};
     return std::move(ipc_cli->send(&msg));
 }
+
+std::future<MulTaskRet> mgpu::MulTaskMulGPU(uint nTask, Task *tasks) {
+    auto ipc_cli = IPCClient::get_client();
+    MulTaskMsg msg{MSG_MUL_TASK, uint(pid << 16) + default_device, DEFAULT_STREAM_, *tasks, nTask};
+    return std::move(ipc_cli->send(&msg));
+}

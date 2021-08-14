@@ -32,22 +32,19 @@ void ProxyWorker::work() {
         struct epoll_event es[3];
         auto len = epoll_wait(epfd, es, 3, -1);
         for (int i = 0; i < len; i++) {
-            if(es[i].data.fd == pipefd[0] /* stop signal */) {
+            if (es[i].data.fd == pipefd[0] /* stop signal */) {
                 stop = true;
                 break;
-            }
-            else if(es[i].data.fd == m_conn) {
-                if(es[i].events & EPOLLRDHUP /* closed */) {
+            } else if (es[i].data.fd == m_conn) {
+                if (es[i].events & EPOLLRDHUP /* closed */) {
                     close(pipefd[1]);
                     stop = true;
                     break;
-                }
-                else if(es[i].events & EPOLLIN /* request */)
-                {
-                    char * msg = new char[MAX_MSG_SIZE];
+                } else if (es[i].events & EPOLLIN /* request */) {
+                    char *msg = new char[MAX_MSG_SIZE];
                     size_t size = recv(m_conn, msg, MAX_MSG_SIZE, 0);
                     msg[size] = 0;
-                    auto cmd = std::make_shared<Command>((AbMsg*)msg, m_conn);
+                    auto cmd = std::make_shared<Command>((AbMsg *) msg, m_conn);
                     CONDUCTOR->conduct(cmd);
                 }
             }

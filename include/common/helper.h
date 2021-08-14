@@ -5,9 +5,11 @@
 #ifndef FASTGPU_HELPER_H
 #define FASTGPU_HELPER_H
 #include <iostream>
+#include <vector>
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <cstring>
+#include "message.h"
 using namespace std;
 
 inline void cudaCheck(cudaError_t x) {
@@ -32,5 +34,25 @@ unsigned fillParameters(char *buff, unsigned offset, T value, Args... args)
     memcpy((buff + offset), &value, sizeof(value));
     offset += sizeof(value);
     return fillParameters(buff, offset, args...);
+}
+
+template<typename T, typename... Args>
+void initTask(mgpu::Task* t, uint hdn, uint dn,const vector<void *>& hda, const vector<size_t>& hds, const vector<size_t>& ds, mgpu::LaunchConf conf, const char* name, const char* kernel, Args... args) {
+    t->hdn = hdn;
+    t->dn = dn;
+    t->conf = conf;
+    strcpy(t->kernel, kernel);
+    strcpy(t->ptx, name);
+    t->p_size = 0;
+    for(int i =0;i<hdn;i++) {
+        t->hds[i] = hds[i];
+        t->p_size = fillParameters(t->param, t->p_size, hda[i]);
+    }
+    for(int i = 0;i<dn;i++)
+    {
+        t->dev_alloc_size[i] = ds[i];
+        t->p_size = fillParameters(t->param, t->p_size, nullptr);
+    }
+    t->p_size = fillParameters(t->param, t->p_size, args...);
 }
 #endif //FASTGPU_HELPER_H

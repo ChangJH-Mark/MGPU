@@ -86,5 +86,8 @@ namespace mgpu{
     // multi GPU function
     struct Matrix;
     std::future<void*> matrixMul_MGPU(Matrix A, Matrix B, LaunchConf launchConf);
+
+    // mult task multi gpu
+    std::future<MulTaskRet> MulTaskMulGPU(uint nTask, Task* tasks);
 }
 #endif //FASTGPU_API_H
