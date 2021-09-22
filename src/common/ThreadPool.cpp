@@ -4,7 +4,7 @@
 
 #include "common/ThreadPool.h"
 
-ThreadPool::ThreadPool(uint init_num, uint max_num) : max_num(max_num), stopped(false) {
+ThreadPool::ThreadPool(uint init_num, uint max_num) : max_num(max_num), stopped(false), idlThrNums(0) {
     for(int i=0; i<init_num && !stopped; i++)
     {
         idlThrNums++;

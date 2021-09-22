@@ -10,19 +10,20 @@
 #include <sys/shm.h>
 #include "common/IPC.h"
 #include "common/message.h"
+
 using namespace mgpu;
 
 pid_t mgpu::pid = getpid();
 
 std::shared_ptr<IPCClient> IPCClient::get_client() {
-    if(!single_instance) {
+    if (!single_instance) {
         single_instance = std::make_shared<IPCClient>();
     }
     return single_instance;
 }
 
 int IPCClient::connect() {
-    if(conn != -1)
+    if (conn != -1)
         return conn;
     conn = ::socket(PF_LOCAL, SOCK_STREAM, 0);
     struct sockaddr_un server_addr{PF_LOCAL};
@@ -34,8 +35,8 @@ int IPCClient::connect() {
     return conn;
 }
 
-void IPCClient::socket_send(uint cli, void *msg, size_t size, uint flag, const char* err_msg) {
-    if(size != ::send(cli, msg, size, flag)) {
+void IPCClient::socket_send(uint cli, void *msg, size_t size, uint flag, const char *err_msg) {
+    if (size != ::send(cli, msg, size, flag)) {
         perror(err_msg);
         exit(1);
     }
@@ -43,14 +44,14 @@ void IPCClient::socket_send(uint cli, void *msg, size_t size, uint flag, const c
 
 void IPCClient::socket_recv(uint cli, void *dst, size_t size, uint flag, const char *err_msg) {
     uint recved;
-    if(size != (recved = ::recv(cli, dst, size, flag))) {
+    if (size != (recved = ::recv(cli, dst, size, flag))) {
         printf("want %d bytes, got %d bytes\n", size, recved);
         perror(err_msg);
         exit(1);
     }
 }
 
-int IPCClient::send(CudaGetDeviceCountMsg* msg) {
+int IPCClient::send(CudaGetDeviceCountMsg *msg) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(CudaGetDeviceCountMsg), 0, "fail to send cudaGetDeviceCount message");
     int ret;
@@ -58,20 +59,22 @@ int IPCClient::send(CudaGetDeviceCountMsg* msg) {
     return ret;
 }
 
-void* IPCClient::send(CudaMallocMsg* msg) {
+void *IPCClient::send(CudaMallocMsg *msg) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(CudaMallocMsg), 0, "fail to send cudaMalloc message");
-    void * ret;
+    void *ret;
     socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMalloc return");
     return ret;
 }
 
-void* IPCClient::send(CudaMallocHostMsg *msg) {
+void *IPCClient::send(CudaMallocHostMsg *msg) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(CudaMallocHostMsg), 0, "fail to send cudaMallocHost message");
     mgpu::CudaMallocHostRet ret;
     socket_recv(cli, &ret, sizeof(ret), 0, "error to receive cudaMallocHost return");
-    if(ret.ptr != shmat(ret.shmid,ret.ptr, 0)) {
+    auto addr = shmat(ret.shmid, ret.ptr, 0);
+    if (ret.ptr != addr) {
+        printf("err %s, return addr %lx, attached %lx, shm_id %d\n", strerror(errno), ret.ptr, addr, ret.shmid);
         perror("share memory with different address");
         exit(1);
     }
@@ -87,7 +90,7 @@ bool IPCClient::send(CudaFreeMsg *msg) {
 }
 
 bool IPCClient::send(CudaFreeHostMsg *msg) {
-    if(0 > shmdt(msg->ptr)) {
+    if (0 > shmdt(msg->ptr)) {
         perror("fail to release share memory");
         exit(1);
     }
@@ -122,7 +125,7 @@ bool IPCClient::send(CudaLaunchKernelMsg *msg) {
     return ret;
 }
 
-bool IPCClient::send(CudaStreamCreateMsg *msg, stream_t * stream) {
+bool IPCClient::send(CudaStreamCreateMsg *msg, stream_t *stream) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(CudaStreamCreateMsg), 0, "fail to send cudaStreamCreate message");
     socket_recv(cli, stream, sizeof(stream_t), 0, "error to receive cudaStreamCreate return");
@@ -137,7 +140,7 @@ bool IPCClient::send(CudaStreamSyncMsg *msg) {
     return ret;
 }
 
-bool IPCClient::send(CudaEventCreateMsg *msg, event_t *event){
+bool IPCClient::send(CudaEventCreateMsg *msg, event_t *event) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(CudaEventSyncMsg), 0, "fail to send cudaEventCreate message");
     socket_recv(cli, event, sizeof(event_t), 0, "error to receive cudaEventCreate return");
@@ -175,13 +178,13 @@ bool IPCClient::send(CudaEventElapsedTimeMsg *msg, float *ms) {
     return true;
 }
 
-std::future<void*> IPCClient::send(MatrixMulMsg *msg) {
+std::future<void *> IPCClient::send(MatrixMulMsg *msg) {
     auto cli = connect();
     socket_send(cli, msg, sizeof(MatrixMulMsg), 0, "fail to send MatrixMulGPU message");
     auto func = [cli, ipc = single_instance]() -> void * {
         CudaMallocHostRet ret;
         ipc->socket_recv(cli, &ret, sizeof(ret), 0, "error to receive MatrixMulGPU return");
-        if(ret.ptr != shmat(ret.shmid,ret.ptr, 0)) {
+        if (ret.ptr != shmat(ret.shmid, ret.ptr, 0)) {
             perror("share memory with different address");
             return nullptr;
         }

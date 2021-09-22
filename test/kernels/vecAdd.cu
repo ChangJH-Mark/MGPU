@@ -17,7 +17,7 @@ extern "C" __global__ void vecAddProxy(int *a, int *b, int num, int sm_low, int 
     // reside on sm (sm >= sm_low && sm < sm_high)
     bool leader = false;
     __shared__ bool terminate;
-    if(threadIdx.x == threadIdx.y == threadIdx.z == 0) {
+    if(threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
         leader = true;
     }
     if(leader)
@@ -26,11 +26,12 @@ extern "C" __global__ void vecAddProxy(int *a, int *b, int num, int sm_low, int 
         int sm_id = get_smid();
         if(sm_id < sm_low || sm_id >= sm_high) {
             terminate = true;
-            printf("worker block %d chose %d sm abandoned\n", blockIdx.x, get_smid());
+//            printf("parameter a %lx b %lx num %d sm_low %d sm_high %d grid.x %d grid.y %d grid.z %d blocks %d\n", a, b, num, sm_low, sm_high, grid.x, grid.y, grid.z, blocks);
+//            printf("worker block %d chose %d sm abandoned\n", blockIdx.x, get_smid());
         }
-        else {
-            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
-        }
+//        else {
+//            printf("worker block %d chose %d sm saved\n", blockIdx.x, get_smid());
+//        }
     }
     __syncthreads();
     if(terminate)
@@ -44,7 +45,7 @@ extern "C" __global__ void vecAddProxy(int *a, int *b, int num, int sm_low, int 
         if(leader)
         {
             index = atomicAdd(&finished, ITERS);
-            printf("block %d claim real block %d\n", blockIdx.x, index);
+//            printf("block %d claim real block %d\n", blockIdx.x, index);
             if(index >= blocks) {
                 terminate = true;
             }
@@ -55,10 +56,10 @@ extern "C" __global__ void vecAddProxy(int *a, int *b, int num, int sm_low, int 
         int high_boundary = min(index + ITERS, blocks);
         for(int i = index; i < high_boundary; i++)
         {
-            if(leader)
-            {
-                printf("worker block %d start do real block %d\n", blockIdx.x, i);
-            }
+//            if(leader)
+//            {
+//                printf("worker block %d start do real block %d\n", blockIdx.x, i);
+//            }
             uint3 blockIDX = make_uint3( i % grid.x, (i / grid.x) % grid.y, (i / (grid.x * grid.y)));
             vecAdd(a, b, num, blockIDX, grid);
         }
@@ -68,6 +69,13 @@ extern "C" __global__ void vecAddProxy(int *a, int *b, int num, int sm_low, int 
 __device__ void vecAdd(int *a, int *b, int num, uint3 blockIDX, dim3 gridDIM) {
     int skip = gridDIM.x * blockDim.x;
     for(int i= threadIdx.x + blockIDX.x * blockDim.x; i< num; i+= skip){
+        b[i] = a[i] + b[i];
+    }
+}
+
+extern "C" __global__ void vecAdd(int *a, int *b, int num) {
+    int skip = gridDim.x + blockDim.x;
+    for(int i = threadIdx.x + blockIdx.x * blockDim.x; i < num; i+= skip) {
         b[i] = a[i] + b[i];
     }
 }

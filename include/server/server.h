@@ -16,10 +16,12 @@
 #include "mod.h"
 #include "commands.h"
 #include "common/Log.h"
+#include "server/memory_pool.h"
 
 #define CONDUCTOR get_server()->get_conductor()
 #define DEVICES get_server()->get_device()
 #define SCHEDULER get_server()->get_scheduler()
+#define MEMPOOL get_server()->get_memPool()
 
 using namespace std;
 namespace mgpu {
@@ -27,6 +29,7 @@ namespace mgpu {
     class Device;
     class Receiver;
     class Conductor;
+    class MemPool;
 
     class Server {
     public:
@@ -38,6 +41,7 @@ namespace mgpu {
         shared_ptr<Scheduler> get_scheduler(){return scheduler;}
         shared_ptr<Receiver> get_receiver(){return receiver;}
         shared_ptr<Conductor> get_conductor(){return conductor;}
+        shared_ptr<MemPool> get_memPool() {return memPool;}
     private:
         static Server *single_instance;
         std::map<string, shared_ptr<Module>> mod;
@@ -45,6 +49,7 @@ namespace mgpu {
         shared_ptr<Scheduler> scheduler;
         shared_ptr<Receiver> receiver;
         shared_ptr<Conductor> conductor;
+        shared_ptr<MemPool> memPool;
 
         friend Server* get_server();
         friend void destroy_server();

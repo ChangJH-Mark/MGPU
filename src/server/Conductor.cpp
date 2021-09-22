@@ -45,59 +45,81 @@ void Conductor::conduct(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " size: " << cmd->get_msg<CudaMallocMsg>()->size << dendl;
     void *dev_ptr;
-    cudaCheck(::cudaSetDevice(cmd->get_device()));
-    cudaCheck(::cudaMalloc(&dev_ptr, cmd->get_msg<CudaMallocMsg>()->size));
-    dout(DEBUG) << " cmd_id: " << cmd->get_id() << " address: " << dev_ptr << dendl;
+    if (MEMPOOL) {
+        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " with pool address: " << dev_ptr << dendl;
+        MEMPOOL->gpuMemoryAlloc(cmd->get_device(), &dev_ptr, cmd->get_msg<CudaMallocMsg>()->size, cmd->get_stream());
+    } else {
+        cudaCheck(::cudaSetDevice(cmd->get_device()));
+        cudaCheck(::cudaMalloc(&dev_ptr, cmd->get_msg<CudaMallocMsg>()->size));
+        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " address: " << dev_ptr << dendl;
+    }
     cmd->finish<void *>(dev_ptr);
 }
 
 void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
     auto msg = cmd->get_msg<CudaMallocHostMsg>();
-    int shm_id;
-    if ((shm_id = shmget(IPC_PRIVATE, msg->size, IPC_CREAT)) < 0) {
-        perror("fail to shmget");
-        exit(1);
+    int shm_id = -1;
+    void *host_ptr = nullptr;
+    if (MEMPOOL) {
+        host_ptr = MEMPOOL->cpuMemoryAlloc(msg->size);
+        if (host_ptr == nullptr) {
+            perror("fail to allocate share memory");
+            exit(EXIT_FAILURE);
+        }
+        shm_id = *(int *) host_ptr;
+        dout(DEBUG) << "share memory id " << shm_id << " address " << host_ptr << " size : " << msg->size << dendl;
     } else {
-        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id << dendl;
+        if ((shm_id = shmget(IPC_PRIVATE, msg->size, IPC_CREAT)) < 0) {
+            perror("fail to shmget");
+            exit(1);
+        } else {
+            dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id << dendl;
+        }
+        host_ptr = shmat(shm_id, NULL, 0);
+        if (!shms_id.count(host_ptr)) {
+            shms_id[host_ptr] = shm_id;
+            dout(DEBUG) << " cmd_id: " << cmd->get_id() << " share memory address: " << host_ptr << dendl;
+        } else {
+            dout(DEBUG) << " cmd_id: " << cmd->get_id() << " share memory already exist shm_id: " << shms_id[host_ptr]
+                        << dendl;
+            perror("fail to shmget");
+            exit(1);
+        }
     }
-    void *host_ptr = shmat(shm_id, NULL, 0);
-    if (!shms_id.count(host_ptr)) {
-        shms_id[host_ptr] = shm_id;
-        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " share memory address: " << host_ptr << dendl;
-    } else {
-        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " share memory already exist shm_id: " << shms_id[host_ptr]
-                    << dendl;
-        perror("fail to shmget");
-        exit(1);
-    }
-//    cudaCheck(::cudaSetDevice(cmd->get_device()));
-//    cudaCheck(::cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished " << dendl;
 }
 
 void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr << dendl;
-    cudaCheck(::cudaSetDevice(cmd->get_device()));
-    auto dev_ptr = cmd->get_msg<CudaFreeMsg>()->devPtr;
-    cudaCheck(::cudaFree(dev_ptr));
+    if (MEMPOOL) {
+        MEMPOOL->gpuMemoryDeAlloc(cmd->get_device(), cmd->get_msg<CudaFreeMsg>()->devPtr, cmd->get_stream());
+        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free with pool: " << cmd->get_msg<CudaFreeMsg>()->devPtr
+                    << dendl;
+    } else {
+        cudaCheck(::cudaSetDevice(cmd->get_device()));
+        auto dev_ptr = cmd->get_msg<CudaFreeMsg>()->devPtr;
+        cudaCheck(::cudaFree(dev_ptr));
+    }
     cmd->finish<bool>(true);
 }
 
 void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " free: " << (cmd->get_msg<CudaFreeHostMsg>()->ptr) << dendl;
     auto host_ptr = cmd->get_msg<CudaFreeHostMsg>()->ptr;
-//    cudaCheck(::cudaSetDevice(cmd->get_device()));
-//    cudaCheck(::cudaHostUnregister(host_ptr))
-    if (0 > shmdt(host_ptr)) {
-        perror("server fail to release share memory");
-        exit(1);
+    if (MEMPOOL) {
+        MEMPOOL->cpuMemoryDeAlloc(host_ptr);
+    } else {
+        if (0 > shmdt(host_ptr)) {
+            perror("server fail to release share memory");
+            exit(1);
+        }
+        if (0 > shmctl(shms_id[host_ptr], IPC_RMID, NULL)) {
+            perror("server fail to delete share memory");
+            exit(1);
+        }
+        shms_id.erase(host_ptr);
     }
-    if (0 > shmctl(shms_id[host_ptr], IPC_RMID, NULL)) {
-        perror("server fail to delete share memory");
-        exit(1);
-    }
-    shms_id.erase(host_ptr);
     cmd->finish<bool>(true);
 }
 
@@ -119,7 +141,8 @@ void Conductor::do_cudamemcpy(const std::shared_ptr<Command> &cmd) {
 
 // start @Kname in @ptx file, with launch @conf, kernel has @param with @size bytes
 void
-launchKernel(string ptx, string kname, LaunchConf conf, void *param, unsigned int size, stream_t stream = nullptr) {
+launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *param, unsigned int size,
+             stream_t stream = nullptr) {
     CUmodule cuModule;
     cudaCheck(static_cast<cudaError_t>(cuModuleLoad(&cuModule, ptx.c_str())));
     CUfunction func;
@@ -133,8 +156,7 @@ launchKernel(string ptx, string kname, LaunchConf conf, void *param, unsigned in
     };
     unsigned int gx = WORKER_GRID, gy = 1, gz = 1;
     string suffix("Proxy");
-    if(kname.size() > suffix.size() && 0 == kname.compare(kname.size() - suffix.size(), suffix.size(), suffix))
-    {
+    if (kname.size() > suffix.size() && 0 == kname.compare(kname.size() - suffix.size(), suffix.size(), suffix)) {
         gx = conf.grid.x, gy = conf.grid.y, gz = conf.grid.z;
     }
     cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, gx, gy, gz,
@@ -292,9 +314,8 @@ void Conductor::do_multask(const std::shared_ptr<Command> &cmd) {
     }
     int success = 0;
     string err_msg;
-    for(int i =0;i<msg->task_num;i++){
-        if(!result[i].get())
-        {
+    for (int i = 0; i < msg->task_num; i++) {
+        if (!result[i].get()) {
             success = 1;
             err_msg += "task #" + to_string(i + 1) + " failed! \n";
         }
