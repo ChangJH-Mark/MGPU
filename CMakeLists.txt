@@ -13,7 +13,7 @@ set(OUTPUT_ROOT /opt/custom)
 set(EXECUTABLE_OUTPUT_PATH ${OUTPUT_ROOT}/bin)
 set(LIBRARY_OUTPUT_PATH ${OUTPUT_ROOT}/lib)
 
-link_directories(${CUDA_ROOT}/lib64)
+link_directories(${CUDA_ROOT}/lib64 ${OUTPUT_ROOT}/lib)
 
 include_directories(./include ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
