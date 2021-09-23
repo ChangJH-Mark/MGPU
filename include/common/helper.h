@@ -12,11 +12,12 @@
 #include "message.h"
 using namespace std;
 
-inline void cudaCheck(cudaError_t x) {
-    if ((x) != cudaSuccess) {
-        cerr << __FUNCTION__ << " cuda error: " << x << " message: " << cudaGetErrorString(x) << endl;
-        exit(EXIT_FAILURE);
-    }
+#define cudaCheck(x) { \
+       cudaError_t err = x; \
+       if(err != cudaSuccess) { \
+          cerr << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " cuda error: " << x << " message: " << cudaGetErrorString(x) << endl; \
+          exit(EXIT_FAILURE);\
+       }\
 }
 
 template<typename T>

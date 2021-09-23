@@ -40,7 +40,7 @@ private:
     std::condition_variable cv;
 
     std::vector<std::thread> workers;
-    std::atomic<uint> idlThrNums = 0;
+    std::atomic<uint> idlThrNums;
 
     std::atomic<bool> stopped;
 };

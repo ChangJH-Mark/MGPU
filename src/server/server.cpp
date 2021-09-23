@@ -24,11 +24,13 @@ Server *mgpu::get_server() {
     //server->scheduler = make_shared<Scheduler>();
     server->receiver = make_shared<Receiver>();
     server->conductor = make_shared<Conductor>();
+    //server->memPool = make_shared<MemPool>();
 
     server->mod["device"] = server->device;
     //server->mod["scheduler"] = server->scheduler;
     server->mod["receiver"] = server->receiver;
     server->mod["conductor"] = server->conductor;
+    //server->mod["memoryPool"] = server->memPool;
     for (const auto &m : server->mod) {
         dout(DEBUG) << "start init mod: " << m.first << dendl;
         m.second->init();
