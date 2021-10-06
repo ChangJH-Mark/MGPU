@@ -15,6 +15,7 @@
 #define MSG_CUDA_MEMSET 0x5
 #define MSG_CUDA_MEMCPY 0x6
 #define MSG_CUDA_LAUNCH_KERNEL 0x7
+#define MSG_MOCK_LAUNCH_KERNEL 0x10007
 #define MSG_CUDA_STREAM_CREATE 0x8
 #define MSG_CUDA_STREAM_SYNCHRONIZE 0x9
 #define MSG_CUDA_GET_DEVICE_COUNT 0xa
@@ -47,6 +48,8 @@ inline const char *get_type_msg(uint type) {
             return " __cuda_memcpy__ ";
         case MSG_CUDA_LAUNCH_KERNEL :
             return " __cuda_launch_kernel__ ";
+        case MSG_MOCK_LAUNCH_KERNEL :
+            return " __mock_launch_kernel__ ";
         case MSG_CUDA_STREAM_CREATE :
             return " __cuda_stream_create__ ";
         case MSG_CUDA_STREAM_SYNCHRONIZE :
@@ -76,19 +79,19 @@ namespace mgpu {
     typedef cudaEvent_t event_t;
 
     typedef struct config {
-        dim3 grid {1, 1, 1};
-        dim3 block {1, 1, 1};
-        int share_memory {0};
-        stream_t stream {nullptr};
+        dim3 grid{1, 1, 1};
+        dim3 block{1, 1, 1};
+        int share_memory{0};
+        stream_t stream{nullptr};
     } LaunchConf;
 
-    typedef struct Matrix{
-        void * data = nullptr;
+    typedef struct Matrix {
+        void *data = nullptr;
         int width = 0;
         int height = 0;
     } Matrix;
 
-    typedef struct Task{
+    typedef struct Task {
         uint hdn; // data number in host
         uint dn;  // extra device memory num needed
         size_t hds[MAX_HOST_ADDR_NUM]; // data size in host
@@ -100,7 +103,7 @@ namespace mgpu {
         size_t p_size{};    // param size
     } Task;
 
-    typedef struct AbMsg{
+    typedef struct AbMsg {
     public:
         api_t type; // api type
         uint key; // pid << 16 + device
@@ -174,6 +177,9 @@ namespace mgpu {
         size_t p_size{};    // param p_size
     } CudaLaunchKernelMsg;
 
+    // mock msg have the same member as cuda
+    typedef struct CudaLaunchKernelMsg MockLaunchKernelMsg;
+
     typedef struct MulTaskMsg : public AbMsg {
         Task task[MAX_TASK_NUM];
         uint task_num;
@@ -195,7 +201,7 @@ namespace mgpu {
     typedef struct MulTaskRet {
         int success;
         char msg[1024]; // error message
-    }MulTaskRet;
+    } MulTaskRet;
 }
 
 #endif //FASTGPU_MESSAGE_H

@@ -40,6 +40,7 @@ namespace mgpu {
         void do_cudamemset(const std::shared_ptr<Command>& cmd);
         void do_cudamemcpy(const std::shared_ptr<Command>& cmd);
         void do_cudalaunchkernel(const std::shared_ptr<Command>& cmd);
+        void do_mocklaunchkernel(const std::shared_ptr<Command>& cmd);
         void do_cudastreamcreate(const std::shared_ptr<Command>& cmd);
         void do_cudastreamsynchronize(const std::shared_ptr<Command>& cmd);
         void do_cudagetdevicecount(const std::shared_ptr<Command>& cmd);

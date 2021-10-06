@@ -78,6 +78,7 @@ void Receiver::push_command(uint conn) {
         case MSG_CUDA_MEMSET:
         case MSG_CUDA_MEMCPY:
         case MSG_CUDA_LAUNCH_KERNEL:
+        case MSG_MOCK_LAUNCH_KERNEL:
         case MSG_CUDA_STREAM_CREATE:
         case MSG_CUDA_STREAM_SYNCHRONIZE:
         case MSG_CUDA_GET_DEVICE_COUNT:

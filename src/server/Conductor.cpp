@@ -25,6 +25,7 @@ void Conductor::init() {
     func_table[MSG_CUDA_MEMSET] = &Conductor::do_cudamemset;
     func_table[MSG_CUDA_MEMCPY] = &Conductor::do_cudamemcpy;
     func_table[MSG_CUDA_LAUNCH_KERNEL] = &Conductor::do_cudalaunchkernel;
+    func_table[MSG_MOCK_LAUNCH_KERNEL] = &Conductor::do_mocklaunchkernel;
     func_table[MSG_CUDA_STREAM_CREATE] = &Conductor::do_cudastreamcreate;
     func_table[MSG_CUDA_STREAM_SYNCHRONIZE] = &Conductor::do_cudastreamsynchronize;
     func_table[MSG_CUDA_GET_DEVICE_COUNT] = &Conductor::do_cudagetdevicecount;
@@ -45,7 +46,7 @@ void Conductor::conduct(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " size: " << cmd->get_msg<CudaMallocMsg>()->size << dendl;
     void *dev_ptr;
-    if (MEMPOOL) {
+    if (false) {
         dout(DEBUG) << " cmd_id: " << cmd->get_id() << " with pool address: " << dev_ptr << dendl;
         MEMPOOL->gpuMemoryAlloc(cmd->get_device(), &dev_ptr, cmd->get_msg<CudaMallocMsg>()->size, cmd->get_stream());
     } else {
@@ -60,7 +61,7 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
     auto msg = cmd->get_msg<CudaMallocHostMsg>();
     int shm_id = -1;
     void *host_ptr = nullptr;
-    if (MEMPOOL) {
+    if (false) {
         host_ptr = MEMPOOL->cpuMemoryAlloc(msg->size);
         if (host_ptr == nullptr) {
             perror("fail to allocate share memory");
@@ -92,7 +93,7 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
 
 void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr << dendl;
-    if (MEMPOOL) {
+    if (false) {
         MEMPOOL->gpuMemoryDeAlloc(cmd->get_device(), cmd->get_msg<CudaFreeMsg>()->devPtr, cmd->get_stream());
         dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free with pool: " << cmd->get_msg<CudaFreeMsg>()->devPtr
                     << dendl;
@@ -107,7 +108,7 @@ void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " free: " << (cmd->get_msg<CudaFreeHostMsg>()->ptr) << dendl;
     auto host_ptr = cmd->get_msg<CudaFreeHostMsg>()->ptr;
-    if (MEMPOOL) {
+    if (false) {
         MEMPOOL->cpuMemoryDeAlloc(host_ptr);
     } else {
         if (0 > shmdt(host_ptr)) {
@@ -155,10 +156,10 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
             CU_LAUNCH_PARAM_END
     };
     unsigned int gx = WORKER_GRID, gy = 1, gz = 1;
-    string suffix("Proxy");
-    if (kname.size() > suffix.size() && 0 == kname.compare(kname.size() - suffix.size(), suffix.size(), suffix)) {
-        gx = conf.grid.x, gy = conf.grid.y, gz = conf.grid.z;
-    }
+//    string suffix("Proxy");
+//    if (kname.size() > suffix.size() && 0 == kname.compare(kname.size() - suffix.size(), suffix.size(), suffix)) {
+//        gx = conf.grid.x, gy = conf.grid.y, gz = conf.grid.z;
+//    }
     cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, gx, gy, gz,
                                                         conf.block.x, conf.block.y, conf.block.z,
                                                         conf.share_memory,
@@ -173,6 +174,13 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
                                  (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
     launchKernel(msg->ptx, msg->kernel + string("Proxy"), msg->conf, msg->param, msg->p_size, cmd->get_stream());
+    cmd->finish<bool>(true);
+}
+
+void Conductor::do_mocklaunchkernel(const std::shared_ptr<Command> &cmd) {
+    cudaCheck(::cudaSetDevice(cmd->get_device()));
+    auto msg = cmd->get_msg<MockLaunchKernelMsg>();
+    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid, (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
     cmd->finish<bool>(true);
 }
 

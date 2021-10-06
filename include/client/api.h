@@ -81,6 +81,16 @@ namespace mgpu {
         msg.p_size = fillParameters(msg.param, 0, args...);
         return ipc_cli->send(&msg);
     }
+
+    template<typename... Args>
+    bool mockLaunchKernel(LaunchConf conf, const char*name, const char* kernel, Args... args) {
+        auto ipc_cli = IPCClient::get_client();
+        MockLaunchKernelMsg msg{MSG_MOCK_LAUNCH_KERNEL, uint(pid << 16) + default_device, conf.stream, conf};
+        strcpy(msg.ptx, name);
+        strcpy(msg.kernel, kernel);
+        msg.p_size = fillParameters(msg.param, 0, args...);
+        return ipc_cli->send(&msg);
+    }
 }
 namespace mgpu{
     // multi GPU function
