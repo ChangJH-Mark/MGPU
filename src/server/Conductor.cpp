@@ -19,6 +19,7 @@ using namespace mgpu;
 
 void Conductor::init() {
     func_table[MSG_CUDA_MALLOC] = &Conductor::do_cudamalloc;
+    func_table[MSG_MOCK_MALLOC] = &Conductor::do_mockmalloc;
     func_table[MSG_CUDA_MALLOC_HOST] = &Conductor::do_cudamallochost;
     func_table[MSG_CUDA_FREE] = &Conductor::do_cudafree;
     func_table[MSG_CUDA_FREE_HOST] = &Conductor::do_cudafreehost;
@@ -54,6 +55,12 @@ void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
         cudaCheck(::cudaMalloc(&dev_ptr, cmd->get_msg<CudaMallocMsg>()->size));
         dout(DEBUG) << " cmd_id: " << cmd->get_id() << " address: " << dev_ptr << dendl;
     }
+    cmd->finish<void *>(dev_ptr);
+}
+
+void Conductor::do_mockmalloc(const std::shared_ptr<Command> &cmd) {
+    dout(DEBUG) << " cmd_id: " << cmd->get_id() << " size: " << cmd->get_msg<MockMallocMsg>()->size << dendl;
+    void *dev_ptr;
     cmd->finish<void *>(dev_ptr);
 }
 

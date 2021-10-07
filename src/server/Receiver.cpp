@@ -72,6 +72,7 @@ void Receiver::push_command(uint conn) {
     auto* api = reinterpret_cast<api_t*>(msg);
     switch (*api) {
         case MSG_CUDA_MALLOC:
+        case MSG_MOCK_MALLOC:
         case MSG_CUDA_MALLOC_HOST:
         case MSG_CUDA_FREE:
         case MSG_CUDA_FREE_HOST:

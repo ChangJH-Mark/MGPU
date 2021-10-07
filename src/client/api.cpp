@@ -25,6 +25,12 @@ void *mgpu::cudaMalloc(size_t size) {
     return ipc_cli->send(&msg);
 }
 
+void *mgpu::mockMalloc(size_t size) {
+    auto ipc_cli = IPCClient::get_client();
+    MockMallocMsg msg{MSG_MOCK_MALLOC, uint(pid << 16) + default_device, DEFAULT_STREAM_, size};
+    return ipc_cli->send(&msg);
+}
+
 void *mgpu::cudaMallocHost(size_t size) {
     auto ipc_cli = IPCClient::get_client();
     CudaMallocHostMsg msg{MSG_CUDA_MALLOC_HOST, uint(pid << 16) + default_device, DEFAULT_STREAM_, size};

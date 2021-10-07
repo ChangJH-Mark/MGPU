@@ -9,6 +9,7 @@
 #include <cuda.h>
 
 #define MSG_CUDA_MALLOC    0x1
+#define MSG_MOCK_MALLOC 0x100001
 #define MSG_CUDA_MALLOC_HOST 0x2
 #define MSG_CUDA_FREE 0x3
 #define MSG_CUDA_FREE_HOST 0x4
@@ -36,6 +37,8 @@ inline const char *get_type_msg(uint type) {
     switch (type) {
         case MSG_CUDA_MALLOC :
             return " __cuda_malloc__ ";
+        case MSG_MOCK_MALLOC :
+            return " __mock_malloc__ ";
         case MSG_CUDA_MALLOC_HOST :
             return " __cuda_malloc_host__ ";
         case MSG_CUDA_FREE :
@@ -116,6 +119,9 @@ namespace mgpu {
     typedef struct CudaMallocMsg : public AbMsg {
         size_t size; // gpu memory bytes
     } CudaMallocMsg;
+
+    // mock msg have the same member as cuda
+    typedef CudaMallocMsg MockMallocMsg;
 
     typedef struct CudaMallocHostMsg : public AbMsg {
         size_t size; // host memory bytes

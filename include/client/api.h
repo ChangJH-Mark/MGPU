@@ -28,6 +28,7 @@ namespace mgpu {
     // communicate with server, call cudaMalloc with @p_size bytes synchronously
     // return gpu memory pointer, 0 on failure
     void *cudaMalloc(size_t size);
+    void *mockMalloc(size_t size);
 
     // communicate with server, call cudaMallocHost with @p_size bytes synchronously
     // return host memory pointer, 0 on failure.

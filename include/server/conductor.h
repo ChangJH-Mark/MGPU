@@ -34,6 +34,7 @@ namespace mgpu {
 
     private:
         void do_cudamalloc(const std::shared_ptr<Command>& cmd);
+        void do_mockmalloc(const std::shared_ptr<Command>& cmd);
         void do_cudamallochost(const std::shared_ptr<Command>& cmd);
         void do_cudafree(const std::shared_ptr<Command>& cmd);
         void do_cudafreehost(const std::shared_ptr<Command>& cmd);
