@@ -7,7 +7,6 @@
 #include "server/receiver.h"
 #include <functional>
 
-shared_ptr<LogPool> logger = make_shared<LogPool>(LOG);
 using namespace mgpu;
 
 Server *Server::single_instance = nullptr;

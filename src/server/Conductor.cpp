@@ -60,7 +60,7 @@ void Conductor::do_cudamalloc(const std::shared_ptr<Command> &cmd) {
 
 void Conductor::do_mockmalloc(const std::shared_ptr<Command> &cmd) {
     dout(DEBUG) << " cmd_id: " << cmd->get_id() << " size: " << cmd->get_msg<MockMallocMsg>()->size << dendl;
-    void *dev_ptr;
+    void *dev_ptr = nullptr;
     cmd->finish<void *>(dev_ptr);
 }
 
