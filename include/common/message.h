@@ -7,6 +7,7 @@
 
 #include <cuda_runtime.h>
 #include <cuda.h>
+#include <string.h>
 
 #define MSG_CUDA_MALLOC    0x1
 #define MSG_MOCK_MALLOC 0x100001
@@ -209,5 +210,59 @@ namespace mgpu {
         char msg[1024]; // error message
     } MulTaskRet;
 }
+
+// futex buffer related
+#ifndef __NR_futex
+#define __NR_futex 202
+#endif
+
+#define PAGE_SIZE 4096
+#define BAD_UADDR (void *)-1
+#define  NOT_READY 0 // NOT IN A WAITING STATUS
+#define READY 1 // IN A WAITING STATUS
+
+typedef struct Futex {
+    void *shm_ptr = (void *)-1;
+    void *size_ptr = (void *)-1;
+    void *data_ptr = (void *)-1;
+    explicit Futex(void *addr){
+        shm_ptr = addr;
+        size_ptr = (void *)((unsigned long long)shm_ptr + sizeof(void *));
+        data_ptr = (void *)((unsigned long long)size_ptr + sizeof(void *));
+    }
+    Futex() {
+        shm_ptr = BAD_UADDR;
+        size_ptr = BAD_UADDR;
+        data_ptr = BAD_UADDR;
+    }
+
+    void setSize(int size) {
+        *(int *)size_ptr = size;
+    }
+    void copyTo(void *dst, int size) {
+        setSize(size);
+        memcpy(dst, data_ptr, size);
+    }
+    void setData(void *src, int size) {
+        setSize(size);
+        memcpy(data_ptr, src, size);
+    }
+
+    void setState(int state) {
+        *(int *)shm_ptr = state;
+    }
+
+    int size() {
+        return *(int *)size_ptr;
+    }
+
+    int state() {
+        return *(int *)shm_ptr;
+    }
+
+    bool ready() {
+        return *(int *)shm_ptr == READY;
+    }
+}Futex;
 
 #endif //FASTGPU_MESSAGE_H

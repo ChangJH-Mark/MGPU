@@ -6,28 +6,33 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include "common/message.h"
+
 namespace mgpu {
     class ProxyWorker : public std::thread {
     public:
         ProxyWorker() = delete;
         ProxyWorker(const ProxyWorker&) = delete;
         ProxyWorker(ProxyWorker &&) = delete;
-        explicit ProxyWorker(uint conn, pid_t pid) : m_conn(conn), m_p(pid), std::thread(&ProxyWorker::work, this) {
-            pthread_setname_np(native_handle(), "proxy_worker");
-            pipe(pipefd);
+        explicit ProxyWorker(uint conn, pid_t pid) : m_conn(conn), m_p(pid), m_stop(false), std::thread(&ProxyWorker::work, this) {
+            buf = new char[PAGE_SIZE];
         }
     public:
         void stop(){
-            write(pipefd[1], "stop", 4);
-            close(pipefd[1]);
+            m_stop = true;
             if(joinable())
                 this->join();
+            delete[] buf;
         };
 
     private:
         uint m_conn; // connection
         pid_t m_p;     // with pid
-        int pipefd[2];   // stop channel
+        Futex c_fut, s_fut;
         void work();
+        int init_shm();
+        void init_pid();
+        bool m_stop;
+        char *buf;
     };
 }

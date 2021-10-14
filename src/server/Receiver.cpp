@@ -94,19 +94,16 @@ void Receiver::push_command(uint conn) {
             dout(DEBUG) << " fail to recognize message info! " << " api: " <<  *api << " key: " << *(api + 1) << dendl;
             exit(EXIT_FAILURE);
     }
-    auto cmd = make_shared<Command>((AbMsg*)msg, conn);
+//    auto cmd = make_shared<Command>((AbMsg*)msg, conn);
 }
 
 void Receiver::do_newconn() {
     uint conn;
-    struct ucred cred{};
-    socklen_t len;
     if (0 > (conn = accept(server_socket, nullptr, nullptr))) {
         perror("fail to make connect");
         exit(EXIT_FAILURE);
     }
-    getsockopt(conn, SOL_SOCKET, SO_PEERCRED, &cred, &len);
-    auto w = make_shared<ProxyWorker>(conn, cred.pid);
+    auto w = make_shared<ProxyWorker>(conn, -1);
     workers.push_back(w);
     w->detach();
 }

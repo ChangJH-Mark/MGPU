@@ -1,2 +1,2 @@
 add_library(client api.cpp IPC.cpp ${COMMON_SRCS} ${PROJECT_SOURCE_DIR}/include/common/message.h ${PROJECT_SOURCE_DIR}/include/client/api.h)
-target_link_libraries(client pthread)
+target_link_libraries(client pthread rt)
