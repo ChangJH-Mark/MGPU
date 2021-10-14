@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <string>
 #include <unistd.h>
+#include <unordered_map>
 #include "common/message.h"
 
 namespace mgpu {
@@ -29,10 +30,13 @@ namespace mgpu {
         uint m_conn; // connection
         pid_t m_p;     // with pid
         Futex c_fut, s_fut;
+        bool m_stop;
+        char *buf;
         void work();
         int init_shm();
         void init_pid();
-        bool m_stop;
-        char *buf;
+
+    public:
+        std::unordered_map<void *, int> shms_id; // shm id allocated by this proxy
     };
 }

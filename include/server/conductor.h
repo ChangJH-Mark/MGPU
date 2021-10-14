@@ -5,7 +5,6 @@
 #ifndef FASTGPU_CONDUCTOR_H
 #define FASTGPU_CONDUCTOR_H
 #include <future>
-#include <unordered_map>
 #include <map>
 #include "common/ThreadPool.h"
 #include "server/commands.h"
@@ -29,7 +28,6 @@ namespace mgpu {
         void conduct(const std::shared_ptr<Command>& cmd);
 
     private:
-        std::unordered_map<void*, int> shms_id;
         std::map<int, void (Conductor::*)(const std::shared_ptr<Command>&)> func_table;
 
     private:

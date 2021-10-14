@@ -78,18 +78,20 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
         shm_id = *(int *) host_ptr;
         //dout(DEBUG) << "share memory id " << shm_id << " address " << host_ptr << " size : " << msg->size <<dendl;
     } else {
-        if ((shm_id = shmget(IPC_PRIVATE, msg->size, IPC_CREAT)) < 0) {
-            perror("fail to shmget");
-            exit(1);
+        shm_id = shmget(IPC_PRIVATE, msg->size, IPC_CREAT | IPC_EXCL);
+        if (shm_id < 0) {
+            perror("fuck to shmget");
+            exit(errno);
         } else {
-            //dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id  << dendl;
+           // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id  << dendl;
             if(0 > shmctl(shm_id, SHM_LOCK, NULL)) {
                 perror("fail to lock shmget");
                 exit(1);
             }
         }
         host_ptr = shmat(shm_id, NULL, 0);
-        if (!shms_id.count(host_ptr)) {
+        auto & shms_id = cmd->get_worker()->shms_id;
+        if(!shms_id.count(host_ptr)) {
             shms_id[host_ptr] = shm_id;
             //dout(DEBUG) << " cmd_id: " << cmd->get_id() << " share memory address: " << host_ptr  << dendl;
         } else {
@@ -99,15 +101,14 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
         }
     }
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
-    //dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished "  << dendl;
+   // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished "  << dendl;
 }
 
 void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
-    //dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr  << dendl;
+   // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr  << dendl;
     if (false) {
         MEMPOOL->gpuMemoryDeAlloc(cmd->get_device(), cmd->get_msg<CudaFreeMsg>()->devPtr, cmd->get_stream());
-        dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free with pool: " << cmd->get_msg<CudaFreeMsg>()->devPtr
-                     << dendl;
+       // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free with pool: " << cmd->get_msg<CudaFreeMsg>()->devPtr << dendl;
     } else {
         cudaCheck(::cudaSetDevice(cmd->get_device()));
         auto dev_ptr = cmd->get_msg<CudaFreeMsg>()->devPtr;
@@ -122,6 +123,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     if (false) {
         MEMPOOL->cpuMemoryDeAlloc(host_ptr);
     } else {
+        auto & shms_id = cmd->get_worker()->shms_id;
         if (0 > shmdt(host_ptr)) {
             perror("server fail to release share memory");
             exit(1);
@@ -269,6 +271,7 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
         dout(DEBUG) << " shm_id: " << shm_id <<dendl;
     }
     void *res = shmat(shm_id, NULL, 0);
+    auto & shms_id = cmd->get_worker()->shms_id;
     if (!shms_id.count(res)) {
         shms_id[res] = shm_id;
     } else {

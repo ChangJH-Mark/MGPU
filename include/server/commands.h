@@ -12,12 +12,13 @@
 #include <cstring>
 #include <linux/futex.h>
 #include <sys/time.h>
+#include "server/proxy_worker.h"
 #include "common/message.h"
 
 namespace mgpu {
     class Command {
     public:
-        Command(AbMsg *m, void * shm_ptr) : type(m->type), fut(shm_ptr), msg(m), stream(m->stream),
+        Command(AbMsg *m, void * shm_ptr, ProxyWorker* worker) : type(m->type), fut(shm_ptr), msg(m), stream(m->stream), m_worker(worker),
                                             status(std::make_shared<bool>(false)) {
             id = id_cnt++;
             device = m->key & 0xffff;
@@ -27,6 +28,7 @@ namespace mgpu {
         Command(const Command &) = delete;
 
         Command(Command &&origin) noexcept {
+            m_worker = origin.m_worker;
             fut = origin.fut;
             type = origin.type;
             msg = origin.msg;
@@ -34,6 +36,7 @@ namespace mgpu {
             stream = origin.stream;
             pid = origin.pid;
             origin.msg = nullptr;
+            origin.m_worker = nullptr;
         }
 
         ~Command() {
@@ -49,6 +52,8 @@ namespace mgpu {
         uint get_device() const { return device; }
 
         stream_t get_stream() const { return stream; }
+
+        ProxyWorker* get_worker() const {return m_worker;}
 
         template<class T>
         T *get_msg() { return (T *) msg; }
@@ -68,6 +73,7 @@ namespace mgpu {
         Futex fut;
         pid_t pid;
         api_t type;
+        ProxyWorker *m_worker;
         AbMsg *msg;
         uint device;
         stream_t stream;

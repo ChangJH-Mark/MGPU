@@ -77,7 +77,7 @@ void ProxyWorker::work() {
         buf[c_fut.size()] = '\0';
         c_fut.setState(NOT_READY);
 
-        auto cmd = std::make_shared<Command>((AbMsg *) buf, s_fut.shm_ptr);
+        auto cmd = std::make_shared<Command>((AbMsg *) buf, s_fut.shm_ptr, this);
         CONDUCTOR->conduct(cmd);
     }
     close(m_conn);
