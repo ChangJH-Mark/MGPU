@@ -56,5 +56,4 @@ void mgpu::destroy_server() {
     for (const auto &m : server->mod) {
         m.second->destroy();
     }
-    logger->destroy();
 }
