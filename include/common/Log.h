@@ -32,12 +32,14 @@ public:
 
     void destroy() {
         stopped = true;
-        cv.notify_all();
+        cv.notify_one();
         pool.stop();
     }
 
 public:
     void submit(chrono::system_clock::time_point time, string &&msg) {
+        if(stopped)
+            return;
         pool.commit(&LogPool::insert, this, time, msg);
     }
 
@@ -51,15 +53,21 @@ private:
 
     void insert(chrono::system_clock::time_point time, string& msg) {
         mut.lock();
-        logs.emplace(time, std::move(msg));
+        if(!stopped)
+            logs.emplace(time, std::move(msg));
         mut.unlock();
         cv.notify_one();
     }
 
     void flush() {
-        while (!stopped) {
+        while (true) {
             std::unique_lock<std::mutex> ulk(mut);
-            cv.wait(ulk, [&]() -> bool { return !logs.empty() || stopped; });
+            // logs is empty, not stopped
+            if(logs.empty() && !stopped)
+                cv.wait(ulk, [&]() -> bool { return !logs.empty() || stopped; });
+            // logs is empty and stopped
+            else if(logs.empty() && stopped)
+                break;
             int count = 0;
             for (auto it = logs.begin(); it != logs.end() && (count < max_out || stopped); count++) {
                 cout << it->second << "\n";
@@ -67,6 +75,7 @@ private:
             }
             cout << std::flush;
             ulk.unlock();
+            // 10ms loop
             this_thread::sleep_for(chrono::milliseconds(10));
         }
     }

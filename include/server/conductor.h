@@ -32,6 +32,8 @@ namespace mgpu {
 
         void join() override {};
 
+        ~Conductor() override {};
+
     public:
         void conduct(const std::shared_ptr<Command> &cmd);
 

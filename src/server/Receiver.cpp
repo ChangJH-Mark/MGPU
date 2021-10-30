@@ -51,7 +51,10 @@ void Receiver::init() {
     epoll_ctl(epfd, EPOLL_CTL_ADD, stopfd[0], &ev);
 }
 
+void deinit_shm(pid_t cpid);
+
 void Receiver::destroy() {
+    dout(LOG) << "start destroy Receiver Module" << dendl;
     stopped = true;
     // stop listener
     close(stopfd[1]);
@@ -61,6 +64,7 @@ void Receiver::destroy() {
     for(const auto &w : workers) {
         close(w.first);
         w.second->stop();
+        deinit_shm(w.second->get_peer());
     }
     workers.clear();
 
@@ -73,6 +77,14 @@ void Receiver::run() {
     listener = std::thread(&Receiver::do_accept, this);
     auto handler = listener.native_handle();
     pthread_setname_np(handler, "Listener");
+}
+
+void deinit_shm(pid_t cpid) {
+    using std::string;
+    string n = "/dev/shm/mgpu.0." + to_string(cpid);
+    unlink(n.c_str());
+    n = "/dev/shm/mgpu.0." + to_string(cpid);
+    unlink(n.c_str());
 }
 
 void init_shm(uint conn, pid_t cpid, void *shms[2]) {
@@ -109,7 +121,7 @@ void Receiver::do_newconn(uint conn) {
     void *shms[2] = {nullptr, nullptr};
     init_shm(conn, ucred.pid, shms);
 
-    workers[conn] = make_shared<ProxyWorker>(shms[0], shms[1]);
+    workers[conn] = make_shared<ProxyWorker>(ucred.pid, shms[0], shms[1]);
     auto handler = workers[conn]->native_handle();
     pthread_setname_np(handler, "proxy_worker");
 }
@@ -143,8 +155,8 @@ void Receiver::do_accept() {
                 dout(LOG) << " one client close connection " << dendl;
                 auto conn = events[i].data.fd;
                 workers[conn]->stop();
+                deinit_shm(workers[conn]->get_peer());
                 workers.erase(conn);
-
                 epoll_ctl(epfd, EPOLL_CTL_DEL, conn, events + i);
             } else {
                 dout(LOG) << " unexpected epoll events happened " << dendl;
@@ -156,4 +168,10 @@ void Receiver::do_accept() {
 }
 
 void Receiver::join() {
+    if(listener.joinable())
+        listener.join();
+    for(auto& w : workers) {
+        if(w.second->joinable())
+            w.second->join();
+    }
 }

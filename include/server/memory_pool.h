@@ -25,16 +25,15 @@ namespace mgpu {
         virtual void join() {}
 
         virtual void destroy() {
-            delete gpuPool->allocator_;
-            delete gpuPool;
-            delete cpuPool->allocator_;
-            delete cpuPool;
+            dout(LOG) << "start destroy MemPool Module" << dendl;
             std::lock_guard<std::mutex> lock(cpu_lock);
             for (auto pair: shm_ids) {
                 shmdt(pair.first);
                 shmctl(pair.second, IPC_RMID, nullptr);
             }
         }
+
+        ~MemPool() override {}
 
     public:
         void gpuMemoryAlloc(int device, void **ptr, size_t size, cudaStream_t stream) {

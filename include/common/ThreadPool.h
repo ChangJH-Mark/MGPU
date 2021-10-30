@@ -4,6 +4,7 @@
 
 #ifndef FASTGPU_THREADPOOL_H
 #define FASTGPU_THREADPOOL_H
+
 #include <atomic>
 #include <functional>
 #include <future>
@@ -12,20 +13,26 @@
 class ThreadPool {
 public:
     ThreadPool(uint init_num, uint max_num);
+
+    ThreadPool(const ThreadPool &) = delete;
+
+    ThreadPool(const ThreadPool &&) = delete;
+
     void stop() {
         stopped = true;
         cv.notify_all();
-        for(auto & w : workers) {
-            if(w.joinable())
+        for (auto &w : workers) {
+            if (w.joinable())
                 w.join();
         }
     }
 
     template<class F, typename... Args>
-    auto commit(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type>;
+    auto commit(F &&f, Args &&... args) -> std::future<typename std::result_of<F(Args...)>::type>;
 
 private:
     void worker();
+
     void addWorker() {
         workers.emplace_back(&ThreadPool::worker, this);
         idlThrNums++;
@@ -46,16 +53,16 @@ private:
 };
 
 template<class F, typename... Args>
-auto ThreadPool::commit(F&& f, Args&&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
+auto ThreadPool::commit(F &&f, Args &&... args) -> std::future<typename std::result_of<F(Args...)>::type> {
     using RetType = typename std::result_of<F(Args...)>::type;
-    auto task = std::make_shared<std::packaged_task<RetType()>> (
+    auto task = std::make_shared<std::packaged_task<RetType()>>(
             std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-            );
+    );
     std::future<RetType> res = task->get_future();
     {
         std::unique_lock<std::mutex> lock(queue_lock);
-        tasks.emplace([task] {(*task)();});
-        if(idlThrNums == 0 && workers.size() < max_num && !stopped)
+        tasks.emplace([task] { (*task)(); });
+        if (idlThrNums == 0 && workers.size() < max_num && !stopped)
             addWorker();
     }
     cv.notify_one();

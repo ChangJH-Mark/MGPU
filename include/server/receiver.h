@@ -36,6 +36,8 @@ namespace mgpu {
 
         void destroy() override;
 
+        ~Receiver() override{}
+
     private:
         void do_accept();
 

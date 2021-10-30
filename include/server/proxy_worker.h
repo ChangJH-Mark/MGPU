@@ -8,6 +8,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <sys/mman.h>
 #include "common/message.h"
 
 namespace mgpu {
@@ -19,23 +20,29 @@ namespace mgpu {
 
         ProxyWorker(ProxyWorker &&) = delete;
 
-        explicit ProxyWorker(void *c, void *s) : c_fut(c), s_fut(s), m_stop(false), buf(new char[PAGE_SIZE]),
-                                                 std::thread(&ProxyWorker::work, this) {
+        explicit ProxyWorker(pid_t p, void *c, void *s) : cpid(p), c_fut(c), s_fut(s), m_stop(false),
+                                                          buf(new char[PAGE_SIZE]),
+                                                          std::thread(&ProxyWorker::work, this) {
         }
 
     public:
+        pid_t get_peer() { return cpid; }
+
         void stop() {
             m_stop = true;
             pthread_cancel(this->native_handle());
             if (joinable())
                 this->join();
+            munmap(c_fut.shm_ptr, PAGE_SIZE);
+            munmap(s_fut.shm_ptr, PAGE_SIZE);
             delete[] buf;
         };
 
     private:
         Futex c_fut, s_fut;
-        bool m_stop;
         char *buf;
+        pid_t cpid;
+        bool m_stop;
 
         void work();
 

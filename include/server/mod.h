@@ -14,6 +14,7 @@ namespace mgpu {
         virtual void destroy(){}
         bool joinable;
         bool stopped;
+        virtual ~Module() {}
     };
 }
 #endif //FASTGPU_MOD_H

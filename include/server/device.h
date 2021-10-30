@@ -47,6 +47,8 @@ namespace mgpu {
 
         void destroy() override;
 
+        ~Device() override {}
+
     private:
         void init_gpu(GPU *, uint id);
     };

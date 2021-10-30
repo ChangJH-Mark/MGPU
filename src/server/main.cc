@@ -9,9 +9,11 @@ int max_level;
 
 void sigint_handler(int signal) {
     dout(LOG) << "receive signal: " << signal << dendl;
-    dout(LOG) << "exit" << dendl;
     mgpu::destroy_server();
-    exit(signal);
+    dout(LOG) << "start deinit logger Module" << dendl;
+    logger->destroy();
+    delete logger;
+    exit(EXIT_SUCCESS);
 }
 
 void init_logger(int argc, char **argv) {
@@ -30,8 +32,4 @@ int main(int argc, char **argv) {
     auto server = get_server();
     dout(LOG) << "initialization complete, wait for jobs" << dendl;
     server->join();
-    pthread_exit(nullptr); // wait for worker thread exit
-
-    logger->destroy();
-    delete logger;
 }

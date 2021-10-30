@@ -5,6 +5,7 @@
 #include <cuda_runtime.h>
 #include "server/device.h"
 #include "common/helper.h"
+#include "common/Log.h"
 
 using namespace mgpu;
 
@@ -25,6 +26,7 @@ void Device::init() {
 }
 
 void Device::destroy() {
+    dout(LOG) << "start destroy Device Module" << dendl;
     for (auto item : gpu_list) {
         delete item;
     }

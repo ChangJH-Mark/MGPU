@@ -21,6 +21,8 @@ namespace mgpu {
         virtual void destroy() override;
         virtual void join() override;
 
+        ~Scheduler() override {}
+
     private:
         void do_scan();
 

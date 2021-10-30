@@ -20,8 +20,8 @@ void ProxyWorker::work() {
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
 
     // make sure futex is ok
-    while(c_fut.shm_ptr ==(void *) -1);
-    while(s_fut.shm_ptr ==(void *) -1);
+    while(c_fut.shm_ptr == BAD_UADDR);
+    while(s_fut.shm_ptr == BAD_UADDR);
 
     // start listen to client
     while (!m_stop) {

@@ -22,6 +22,7 @@ void Scheduler::do_scan() {
 }
 
 void Scheduler::destroy() {
+    dout(LOG) << "start destroy Scheduler Module" << dendl;
     stopped = true;
 }
 
