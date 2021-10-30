@@ -31,7 +31,7 @@ Server *mgpu::get_server() {
     server->mod["conductor"] = server->conductor;
     server->mod["memoryPool"] = server->memPool;
     for (const auto &m : server->mod) {
-        dout(DEBUG) << "start init mod: " << m.first << dendl;
+        dout(LOG) << "start init mod: " << m.first << dendl;
         m.second->init();
     }
 

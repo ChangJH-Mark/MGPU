@@ -4,6 +4,7 @@
 
 #ifndef FASTGPU_GPU_PROPERTY_H
 #define FASTGPU_GPU_PROPERTY_H
+
 #include <thread>
 #include <list>
 #include <map>
@@ -21,23 +22,33 @@ namespace mgpu {
             uint share_mem;
             uint global_mem;
             uint const_mem;
-        }GPU;
+        } GPU;
 
         int num = 0;
-        std::list<GPU*> gpu_list;
+        std::list<GPU *> gpu_list;
 
     public:
-        int counts() const {return num;}
+        int counts() const { return num; }
+
     public:
-        Device() =default;
+        Device() = default;
+
+        Device(const Device &) = delete;
+
+        Device(const Device &&) = delete;
+
         void observe();
-        void run() override{};
+
+        void run() override {};
+
         void init() override;
-        void join() override{};
+
+        void join() override {};
+
         void destroy() override;
 
     private:
-        void init_gpu(GPU*, uint id);
+        void init_gpu(GPU *, uint id);
     };
 }
 #endif //FASTGPU_GPU_PROPERTY_H

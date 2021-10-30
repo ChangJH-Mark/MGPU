@@ -18,7 +18,7 @@
 using namespace mgpu;
 
 void Conductor::init() {
-    func_table[MSG_CUDA_MALLOC] = &Conductor::do_cudamalloc;
+    func_table[MSG_CUDA_MALLOC] = do_cudamalloc;
     func_table[MSG_MOCK_MALLOC] = &Conductor::do_mockmalloc;
     func_table[MSG_CUDA_MALLOC_HOST] = &Conductor::do_cudamallochost;
     func_table[MSG_CUDA_FREE] = &Conductor::do_cudafree;
@@ -40,7 +40,7 @@ void Conductor::init() {
 }
 
 void Conductor::conduct(const std::shared_ptr<Command> &cmd) {
-    auto task = std::bind(func_table[cmd->get_type()], this, cmd);
+    auto task = std::bind(func_table[cmd->get_type()], cmd);
     task();
 }
 
@@ -84,12 +84,12 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
             exit(errno);
         } else {
            // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id  << dendl;
-            if(0 > shmctl(shm_id, SHM_LOCK, NULL)) {
+            if(0 > shmctl(shm_id, SHM_LOCK, nullptr)) {
                 perror("fail to lock shmget");
                 exit(1);
             }
         }
-        host_ptr = shmat(shm_id, NULL, 0);
+        host_ptr = shmat(shm_id, nullptr, 0);
         auto & shms_id = cmd->get_worker()->shms_id;
         if(!shms_id.count(host_ptr)) {
             shms_id[host_ptr] = shm_id;
@@ -128,7 +128,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
             perror("server fail to release share memory");
             exit(1);
         }
-        if (0 > shmctl(shms_id[host_ptr], IPC_RMID, NULL)) {
+        if (0 > shmctl(shms_id[host_ptr], IPC_RMID, nullptr)) {
             perror("server fail to delete share memory");
             exit(1);
         }
@@ -177,7 +177,7 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
                                                         conf.block.x, conf.block.y, conf.block.z,
                                                         conf.share_memory,
                                                         stream,
-                                                        NULL, extra)));
+                                                        nullptr, extra)));
     cudaCheck(static_cast<cudaError_t>(cuModuleUnload(cuModule)));
 }
 
@@ -270,7 +270,7 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
     } else {
         dout(DEBUG) << " shm_id: " << shm_id <<dendl;
     }
-    void *res = shmat(shm_id, NULL, 0);
+    void *res = shmat(shm_id, nullptr, 0);
     auto & shms_id = cmd->get_worker()->shms_id;
     if (!shms_id.count(res)) {
         shms_id[res] = shm_id;
@@ -293,9 +293,9 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
         cudaCheck(::cudaMalloc(&dev_A, sizeof(float) * A.height * A.width));
         cudaCheck(::cudaMalloc(&dev_B, sizeof(float) * B.height * B.width));
         cudaCheck(::cudaMalloc(&dev_C, sizeof(float) * A.height * B.width));
-        cudaEventRecord(starts[i], 0);
-        cudaMemcpyAsync(dev_A, A.data, sizeof(float) * A.height * A.width, cudaMemcpyHostToDevice, 0);
-        cudaMemcpyAsync(dev_B, B.data, sizeof(float) * B.height * B.width, cudaMemcpyHostToDevice, 0);
+        cudaEventRecord(starts[i], nullptr);
+        cudaMemcpyAsync(dev_A, A.data, sizeof(float) * A.height * A.width, cudaMemcpyHostToDevice, nullptr);
+        cudaMemcpyAsync(dev_B, B.data, sizeof(float) * B.height * B.width, cudaMemcpyHostToDevice, nullptr);
         CUmodule module;
         cudaCheck(static_cast<cudaError_t>(::cuModuleLoad(&module, "/opt/custom/ptx/matrixMul.ptx")));
         CUfunction func;
@@ -314,7 +314,7 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
         int area = A.height * B.width / device->counts();
         cudaCheck(::cudaMemcpyAsync(static_cast<float *>(res) + area * i, static_cast<float *>(dev_C) + area * i,
                                     sizeof(float) * area, cudaMemcpyDeviceToHost, 0));
-        cudaCheck(::cudaEventRecord(ends[i], 0));
+        cudaCheck(::cudaEventRecord(ends[i], nullptr));
     }
     for (int i = 0; i < device->counts(); i++) {
         cudaCheck(::cudaEventSynchronize(ends[i]));

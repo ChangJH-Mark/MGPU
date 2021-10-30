@@ -8,8 +8,8 @@ LogPool* logger = nullptr;
 int max_level;
 
 void sigint_handler(int signal) {
-    cout << "receive signal: " << signal << endl;
-    cout << "exit" << endl;
+    dout(LOG) << "receive signal: " << signal << dendl;
+    dout(LOG) << "exit" << dendl;
     mgpu::destroy_server();
     exit(signal);
 }

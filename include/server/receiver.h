@@ -4,11 +4,9 @@
 
 #ifndef FASTGPU_RECEIVER_H
 #define FASTGPU_RECEIVER_H
+
 #include <thread>
-#include <atomic>
 #include <map>
-#include <vector>
-#include <unordered_map>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include "mod.h"
@@ -17,31 +15,39 @@
 #include "commands.h"
 #include "server/server.h"
 #include "server/proxy_worker.h"
-#define E_CNT 4
 
-namespace mgpu{
+namespace mgpu {
     class Receiver : public Module {
     public:
-        Receiver(){
+        Receiver() {
             joinable = true;
+            max_worker = 16;
         };
+
+        Receiver(const Receiver &) = delete;
+
+        Receiver(const Receiver &&) = delete;
+
         void init() override;
+
         void run() override;
+
         void join() override;
+
         void destroy() override;
 
     private:
         void do_accept();
-        void do_worker(uint conn);
-        void do_newconn();
-        void push_command(uint conn);
+
+        void do_newconn(uint conn);
 
     private:
-        uint server_socket{};
+        uint max_worker;
+        uint server_socket;
         std::thread listener;
         int epfd;
         int stopfd[2];
-        vector<shared_ptr<ProxyWorker>> workers;
+        map<uint, shared_ptr<ProxyWorker>> workers;
     };
 }
 #endif //FASTGPU_RECEIVER_H

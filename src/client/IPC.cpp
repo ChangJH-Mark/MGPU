@@ -76,7 +76,6 @@ int IPCClient::connect() {
         return errno;
     }
     // tell server two shm_ptrs
-    write(conn, &pid, sizeof(pid));
     write(conn, &c_fut.shm_ptr, sizeof(void *));
     write(conn, &s_fut.shm_ptr, sizeof(void *));
     return 0;

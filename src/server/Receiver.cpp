@@ -8,127 +8,152 @@
 #include "common/IPC.h"
 #include <unistd.h>
 #include <sys/un.h>
-#include <iostream>
+#include <sys/mman.h>
+#include <fcntl.h>
+
 #define MAX_MSG_SIZE (1 << 12) // 4KB
 
 using namespace mgpu;
 
 void Receiver::init() {
-    const char* socket_address = mgpu::server_path;
+    const char *socket_address = mgpu::server_path;
     server_socket = socket(PF_LOCAL, SOCK_STREAM, 0);
-    if(server_socket < 0){
+    if (server_socket < 0) {
         perror("fail to create server sock");
         exit(1);
     }
-    struct sockaddr_un server_address {AF_LOCAL};
+    struct sockaddr_un server_address{AF_LOCAL};
     strcpy(server_address.sun_path, socket_address);
-    if(access(mgpu::server_path, F_OK) == 0){
+    if (access(mgpu::server_path, F_OK) == 0) {
         unlink(mgpu::server_path);
-        dout(DEBUG) << "socket path: " << mgpu::server_path << " already exist, delete" << dendl;
+        dout(LOG) << "socket path: " << mgpu::server_path << " already exist, delete" << dendl;
     }
-    if(0 > bind(server_socket, (struct sockaddr*) &server_address, SUN_LEN(&server_address))) {
+    if (0 > bind(server_socket, (struct sockaddr *) &server_address, SUN_LEN(&server_address))) {
         perror("fail to bind server socket");
         exit(1);
     }
-    if(0 > listen(server_socket, 100)){
+    if (0 > listen(server_socket, 100)) {
         perror("fail to listen server socket");
         exit(1);
     }
-    epfd = epoll_create(E_CNT);
+
+    epfd = epoll_create(max_worker + 2); // worker + server_socket + stopfd
+
     struct epoll_event ev{};
     ev.data.fd = server_socket;
     ev.events = EPOLLIN;
     epoll_ctl(epfd, EPOLL_CTL_ADD, server_socket, &ev);
+
     // stop epoll wait
     pipe(stopfd);
     ev.data.fd = stopfd[0];
-    ev.events = EPOLLIN;
+    ev.events = EPOLLIN | EPOLLHUP;
     epoll_ctl(epfd, EPOLL_CTL_ADD, stopfd[0], &ev);
 }
 
 void Receiver::destroy() {
     stopped = true;
-    unlink(mgpu::server_path);
-    write(stopfd[1], "stop", 4);
+    // stop listener
     close(stopfd[1]);
-    close(server_socket);
-    for(const auto& w : workers) {
-        w->stop();
+    listener.join();
+
+    // stop worker
+    for(const auto &w : workers) {
+        close(w.first);
+        w.second->stop();
     }
     workers.clear();
-    this->listener.join();
+
+    // close server socket
+    close(server_socket);
+    unlink(mgpu::server_path);
 }
 
 void Receiver::run() {
-    this->listener = std::thread(&Receiver::do_accept, this);
-    auto handler = this->listener.native_handle();
+    listener = std::thread(&Receiver::do_accept, this);
+    auto handler = listener.native_handle();
     pthread_setname_np(handler, "Listener");
 }
 
-void Receiver::push_command(uint conn) {
-    char * msg = new char[MAX_MSG_SIZE];
-    size_t size = recv(conn, msg, MAX_MSG_SIZE, 0);
-    msg[size] = 0;
-    auto* api = reinterpret_cast<api_t*>(msg);
-    switch (*api) {
-        case MSG_CUDA_MALLOC:
-        case MSG_MOCK_MALLOC:
-        case MSG_CUDA_MALLOC_HOST:
-        case MSG_CUDA_FREE:
-        case MSG_CUDA_FREE_HOST:
-        case MSG_CUDA_MEMSET:
-        case MSG_CUDA_MEMCPY:
-        case MSG_CUDA_LAUNCH_KERNEL:
-        case MSG_MOCK_LAUNCH_KERNEL:
-        case MSG_CUDA_STREAM_CREATE:
-        case MSG_CUDA_STREAM_SYNCHRONIZE:
-        case MSG_CUDA_GET_DEVICE_COUNT:
-        case MSG_CUDA_EVENT_CREATE:
-        case MSG_CUDA_EVENT_DESTROY:
-        case MSG_CUDA_EVENT_RECORD:
-        case MSG_CUDA_EVENT_SYNCHRONIZE:
-        case MSG_CUDA_EVENT_ELAPSED_TIME:
-        case MSG_MATRIX_MUL_GPU:
-            break;
-        default:
-            dout(DEBUG) << " fail to recognize message info! " << " api: " <<  *api << " key: " << *(api + 1) << dendl;
+void init_shm(uint conn, pid_t cpid, void *shms[2]) {
+    using std::string;
+    string names[2] = {"mgpu.0." + to_string(cpid), "mgpu.1." + to_string(cpid)};
+    string root = "/dev/shm/";
+    int cnt = 0;
+    for (auto &n : names) {
+        auto bytes = read(conn, &(shms[cnt]), sizeof(void *));
+        assert(bytes == sizeof(void *));
+        if (0 != access((root + n).c_str(), F_OK)) {
+            printf("error to open shm %s\n", (root + n).c_str());
             exit(EXIT_FAILURE);
+        }
+        int fd = shm_open(n.c_str(), O_CLOEXEC | O_RDWR, 0644);
+        assert(fd > 0);
+        if (shms[cnt] != mmap(shms[cnt], PAGE_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0)) {
+            printf("mgpu mapped at distinct address\n");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
+        cnt++;
     }
-//    auto cmd = make_shared<Command>((AbMsg*)msg, conn);
 }
 
-void Receiver::do_newconn() {
-    uint conn;
-    if (0 > (conn = accept(server_socket, nullptr, nullptr))) {
-        perror("fail to make connect");
+void Receiver::do_newconn(uint conn) {
+    struct ucred ucred{};
+    socklen_t len = sizeof(struct ucred);
+
+    if (getsockopt(conn, SOL_SOCKET, SO_PEERCRED, &ucred, &len) < 0) {
+        perror("fail to get peer id");
         exit(EXIT_FAILURE);
     }
-    auto w = make_shared<ProxyWorker>(conn, -1);
-    workers.push_back(w);
-    w->detach();
+    void *shms[2] = {nullptr, nullptr};
+    init_shm(conn, ucred.pid, shms);
+
+    workers[conn] = make_shared<ProxyWorker>(shms[0], shms[1]);
+    auto handler = workers[conn]->native_handle();
+    pthread_setname_np(handler, "proxy_worker");
 }
 
 void Receiver::do_accept() {
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
-    struct epoll_event events[E_CNT];
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    struct epoll_event events[max_worker + 2];
     while (!stopped) {
-        int len = epoll_wait(epfd, events, E_CNT, -1);
+        int len = epoll_wait(epfd, events, max_worker + 2, -1);
         for (int i = 0; i < len; i++) {
-            if (events[i].data.fd == stopfd[0] /* server close */) {
-                dout(DEBUG) << " server close " << stopfd[0] << dendl;
+            if (events[i].data.fd == stopfd[0] /* receiver close */) {
+                dout(LOG) << " receiver close " << stopfd[0] << dendl;
                 close(stopfd[0]);
+                stopped = true;
                 break;
             } else if (events[i].data.fd == server_socket /* new connection */) {
-                dout(DEBUG) << " new connection " << dendl;
-                do_newconn();
+                dout(LOG) << " new connection " << dendl;
+
+                uint conn = accept(server_socket, nullptr, nullptr);
+                if (conn < 0) {
+                    perror("fail to make connection");
+                    exit(EXIT_FAILURE);
+                }
+
+                epoll_event ev{};
+                ev.data.fd = conn, ev.events = EPOLLIN | EPOLLRDHUP;
+                epoll_ctl(epfd, EPOLL_CTL_ADD, conn, &ev);
+                do_newconn(conn);
+            } else if (events[i].events & EPOLLRDHUP &&
+                       workers.find(events[i].data.fd) != workers.end() /* client close connection */) {
+                dout(LOG) << " one client close connection " << dendl;
+                auto conn = events[i].data.fd;
+                workers[conn]->stop();
+                workers.erase(conn);
+
+                epoll_ctl(epfd, EPOLL_CTL_DEL, conn, events + i);
             } else {
-                dout(DEBUG) << " unexpected epoll events happened " << dendl;
+                dout(LOG) << " unexpected epoll events happened " << dendl;
+                exit(EXIT_FAILURE);
             }
-        } // while(!stopped)
-    }
+        } // for
+    }// while(!stopped)
     close(epfd);
 }
 
 void Receiver::join() {
-//    listener.detach();
 }
