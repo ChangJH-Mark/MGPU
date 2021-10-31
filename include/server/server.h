@@ -33,12 +33,12 @@ namespace mgpu {
         void join();
 
     public:
-        shared_ptr<Device> get_device(){return device;}
-        shared_ptr<Scheduler> get_scheduler(){return scheduler;}
-        shared_ptr<Receiver> get_receiver(){return receiver;}
-        shared_ptr<Conductor> get_conductor(){return conductor;}
-        shared_ptr<MemPool> get_memPool() {return memPool;}
-        shared_ptr<KernelMgr> get_KernelMgr() {return kernelMgr;}
+        shared_ptr<Device>& get_device(){return device;}
+        shared_ptr<Scheduler>& get_scheduler(){return scheduler;}
+        shared_ptr<Receiver>& get_receiver(){return receiver;}
+        shared_ptr<Conductor>& get_conductor(){return conductor;}
+        shared_ptr<MemPool>& get_memPool() {return memPool;}
+        shared_ptr<KernelMgr>& get_KernelMgr() {return kernelMgr;}
     private:
         static Server *single_instance;
         std::map<string, shared_ptr<Module>> mod;
@@ -59,6 +59,6 @@ namespace mgpu {
 #define DEVICES get_server()->get_device()
 #define SCHEDULER get_server()->get_scheduler()
 #define MEMPOOL get_server()->get_memPool()
-#define KERNELMGR get_server()->get_kernelMgr()
+#define KERNELMGR get_server()->get_KernelMgr()
 }
 #endif //FASTGPU_SERVER_H

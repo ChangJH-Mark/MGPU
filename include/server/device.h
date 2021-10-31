@@ -6,26 +6,25 @@
 #define FASTGPU_GPU_PROPERTY_H
 
 #include <thread>
-#include <list>
+#include <vector>
 #include <map>
 #include <unistd.h>
 #include "mod.h"
 
 namespace mgpu {
     class Device : public Module {
-    private:
+    public:
         typedef struct GPU {
             uint ID;
             uint max_blocks;
+            uint max_warps;
             uint warp_size;
             uint sms;
             uint share_mem;
             uint global_mem;
             uint const_mem;
+            double gmem_max_tp; /* max bytes read / write per gpu clock */
         } GPU;
-
-        int num = 0;
-        std::list<GPU *> gpu_list;
 
     public:
         int counts() const { return num; }
@@ -36,6 +35,8 @@ namespace mgpu {
         Device(const Device &) = delete;
 
         Device(const Device &&) = delete;
+
+        const GPU* getDev(int gpuid);
 
         void observe();
 
@@ -50,6 +51,9 @@ namespace mgpu {
         ~Device() override {}
 
     private:
+        int num = 0;
+        std::vector<GPU *> gpu_list;
+
         void init_gpu(GPU *, uint id);
     };
 }

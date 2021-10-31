@@ -13,9 +13,9 @@
 using namespace std;
 
 #define cudaCheck(x) { \
-       cudaError_t err = x; \
+       cudaError_t err = static_cast<cudaError_t>(x); \
        if(err != cudaSuccess) { \
-          cerr << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " cuda error: " << x << " message: " << cudaGetErrorString(x) << endl; \
+          cerr << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " cuda error: " << err << " message: " << cudaGetErrorString(err) << endl; \
           exit(EXIT_FAILURE);\
        }\
 }
