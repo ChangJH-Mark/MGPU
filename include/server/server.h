@@ -18,11 +18,6 @@
 #include "common/Log.h"
 #include "server/memory_pool.h"
 
-#define CONDUCTOR get_server()->get_conductor()
-#define DEVICES get_server()->get_device()
-#define SCHEDULER get_server()->get_scheduler()
-#define MEMPOOL get_server()->get_memPool()
-
 using namespace std;
 namespace mgpu {
     class Scheduler;
@@ -30,6 +25,7 @@ namespace mgpu {
     class Receiver;
     class Conductor;
     class MemPool;
+    class KernelMgr;
 
     class Server {
     public:
@@ -42,6 +38,7 @@ namespace mgpu {
         shared_ptr<Receiver> get_receiver(){return receiver;}
         shared_ptr<Conductor> get_conductor(){return conductor;}
         shared_ptr<MemPool> get_memPool() {return memPool;}
+        shared_ptr<KernelMgr> get_KernelMgr() {return kernelMgr;}
     private:
         static Server *single_instance;
         std::map<string, shared_ptr<Module>> mod;
@@ -50,11 +47,18 @@ namespace mgpu {
         shared_ptr<Receiver> receiver;
         shared_ptr<Conductor> conductor;
         shared_ptr<MemPool> memPool;
+        shared_ptr<KernelMgr> kernelMgr;
 
         friend Server* get_server();
         friend void destroy_server();
     };
     extern Server * get_server();
     extern void destroy_server();
+
+#define CONDUCTOR get_server()->get_conductor()
+#define DEVICES get_server()->get_device()
+#define SCHEDULER get_server()->get_scheduler()
+#define MEMPOOL get_server()->get_memPool()
+#define KERNELMGR get_server()->get_kernelMgr()
 }
 #endif //FASTGPU_SERVER_H

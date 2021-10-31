@@ -5,8 +5,10 @@ set(CMAKE_CUDA_STANDARD 11)
 enable_language(CUDA)
 if(POLICY CMP0104)
     cmake_policy(SET CMP0104 NEW)
-    set(CMAKE_CUDA_ARCHITECTURES 50)
+    set(CMAKE_CUDA_ARCHITECTURES 61)
 endif()
+
+find_package(RapidJSON)
 
 set(CUDA_ROOT /usr/local/cuda)
 set(OUTPUT_ROOT /opt/custom)

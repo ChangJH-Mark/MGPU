@@ -1,0 +1,3 @@
+[submodule "third-party/RapidJSON"]
+	path = third-party/RapidJSON
+	url = git@gitee.com:Tencent/RapidJSON.git

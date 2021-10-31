@@ -5,6 +5,7 @@
 #include "server/device.h"
 #include "server/scheduler.h"
 #include "server/receiver.h"
+#include "server/kernel.h"
 #include <functional>
 
 using namespace mgpu;
@@ -24,12 +25,14 @@ Server *mgpu::get_server() {
     server->receiver = make_shared<Receiver>();
     server->conductor = make_shared<Conductor>();
     server->memPool = make_shared<MemPool>();
+    server->kernelMgr = make_shared<KernelMgr>();
 
     server->mod["device"] = server->device;
     //server->mod["scheduler"] = server->scheduler;
     server->mod["receiver"] = server->receiver;
     server->mod["conductor"] = server->conductor;
     server->mod["memoryPool"] = server->memPool;
+    server->mod["kernelMgr"] = server->kernelMgr;
     for (const auto &m : server->mod) {
         dout(LOG) << "start init mod: " << m.first << dendl;
         m.second->init();
