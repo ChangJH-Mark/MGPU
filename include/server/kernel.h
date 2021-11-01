@@ -55,6 +55,8 @@ namespace mgpu {
     public:
         void init(); // init run time configs
         void run();
+        void set_config(); // dynamic set run time configs
+        void getInfo(); // get run time info
 
     private:
         // parameter
