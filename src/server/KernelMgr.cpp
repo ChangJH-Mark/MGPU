@@ -50,11 +50,18 @@ void KernelMgr::obverse() {
     }
 }
 
-int calMaxBlock(const Device::GPU* gpu, const Kernel& prop) {
-    return prop.shms;
+int calMaxBlock(const Device::GPU *gpu, const Kernel &prop, dim3 &block) {
+    unsigned int max_blocks = gpu->max_blocks;
+    max_blocks = min(max_blocks,
+                     (gpu->max_warps * gpu->warp_size) / (block.x * block.y * block.z)); /* max_threads_per_sm limit */
+    max_blocks = min(max_blocks,
+                     (gpu->share_mem) / (prop.shms));                                    /* share memory limit */
+    max_blocks = min(max_blocks, gpu->regs / (prop.regs * block.x * block.y * block.z)); /* register limit */
+
+    return max_blocks;
 }
 
-KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : dev(gpuid) {
+KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) {
     // name
     name = msg->kernel;
     if (KERNELMGR->kns.find(name) == KERNELMGR->kns.end()) {
@@ -72,19 +79,63 @@ KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : dev(gpuid)
     cudaCheck(cuModuleLoad(&mod, msg->ptx));
     cudaCheck(cuModuleGetFunction(&func, mod, msg->kernel));
     cudaCheck(cuModuleGetFunction(&func_v1, mod, (name + "_V1").c_str()));
-    cudaCheck(cuModuleGetGlobal(&conf_ptr, nullptr, mod, "configs"));
+    cudaCheck(cuModuleGetGlobal(&devConf, nullptr, mod, "configs"));
 
     // parameter
     memcpy(param_buf, msg->param, msg->p_size);
     p_size = msg->p_size;
 
     // cpu conf
-    auto gpu = DEVICES->getDev(gpuid);
-    conf = new int[gpu->sms + 6];
-    max_block_per_sm = calMaxBlock(gpu, prop);
+    gpu = DEVICES->getDev(gpuid);
+    cbytes = sizeof(int) * (6 + gpu->sms);
+    cpuConf = new int[cbytes];
+    max_block_per_sm = calMaxBlock(gpu, prop, block);
+}
+
+void KernelInstance::init() {
+    cpuConf[0] = 0 + (5 << 8) + (max_block_per_sm << 16);  /* sms flag */
+    cpuConf[1] = grid.x * grid.y * grid.z;                 /* total blocks */
+    cpuConf[2] = 0;                                        /* finished blocks */
+    cpuConf[3] = grid.x;                                   /* origin grid */
+    cpuConf[4] = grid.y;                                   /* origin grid */
+    cpuConf[5] = grid.z;                                   /* origin grid */
+    for (int i = 6; i < gpu->sms; i++) {                /* sm-worker count */
+        cpuConf[i] = 0;
+    }
+    cudaCheck(cudaSetDevice(gpu->ID));
+    // set run time resource conf
+    cudaCheck(cudaMemcpyAsync((void *) devConf, cpuConf, cbytes, cudaMemcpyHostToDevice, stream));
+    grid_v1 = dim3(max_block_per_sm * gpu->sms, 1, 1);
+}
+
+void KernelInstance::launch() {
+    void *extra[] = {CU_LAUNCH_PARAM_BUFFER_POINTER, param_buf,
+                     CU_LAUNCH_PARAM_BUFFER_SIZE, &p_size,
+                     CU_LAUNCH_PARAM_END};
+    cudaCheck(cuLaunchKernel(func_v1, grid_v1.x, grid_v1.y, grid_v1.z, block.x, block.y,
+                             block.z, 0, stream, nullptr, extra));
+}
+
+void KernelInstance::sync() {
+    cudaCheck(cudaStreamSynchronize(stream));
+}
+
+void KernelInstance::set_config(int sm_low, int sm_high, int wlimit, stream_t ctrl) {
+    cpuConf[0] = sm_low + (sm_high << 8) + (wlimit << 16);
+    cudaCheck(cudaMemcpyAsync((void *) devConf, cpuConf, sizeof(int), cudaMemcpyHostToDevice, ctrl));
+}
+
+void KernelInstance::get_runinfo(stream_t ctrl) {
+    unsigned long long off = 5 * sizeof(int);
+    cudaCheck(cudaMemcpyAsync(cpuConf + off, (void *) (devConf + off), cbytes - off, cudaMemcpyDeviceToHost, ctrl));
+    cudaCheck(cudaStreamSynchronize(ctrl));
+}
+
+int KernelInstance::get_config() {
+    return cpuConf[0];
 }
 
 KernelInstance::~KernelInstance() {
     cudaCheck(cuModuleUnload(mod));
-    delete[] conf;
+    delete[] cpuConf;
 }

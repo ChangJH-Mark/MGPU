@@ -16,13 +16,14 @@ namespace mgpu {
     public:
         typedef struct GPU {
             uint ID;
-            uint max_blocks;
-            uint max_warps;
-            uint warp_size;
             uint sms;
+            uint regs;
             uint share_mem;
             uint global_mem;
             uint const_mem;
+            uint max_blocks;
+            uint max_warps;
+            uint warp_size;
             double gmem_max_tp; /* max bytes read / write per gpu clock */
         } GPU;
 

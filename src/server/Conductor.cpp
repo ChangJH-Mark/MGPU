@@ -12,6 +12,7 @@
 #include "common/Log.h"
 #include "server/server.h"
 #include "server/device.h"
+#include "server/kernel.h"
 
 #define WORKER_GRID 60
 
@@ -182,13 +183,21 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
 }
 
 void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
-    cudaCheck(::cudaSetDevice(cmd->get_device()));
-    auto msg = cmd->get_msg<CudaLaunchKernelMsg>();
-    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
-                                 (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
-    launchKernel(msg->ptx, msg->kernel + string("Proxy"), msg->conf, msg->param, msg->p_size, cmd->get_stream());
+    KernelInstance ki(cmd->get_msg<CudaLaunchKernelMsg>(), cmd->get_device());
+    ki.init();
+    ki.launch();
+    ki.sync();
     cmd->finish<bool>(true);
 }
+
+//void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
+//    cudaCheck(::cudaSetDevice(cmd->get_device()));
+//    auto msg = cmd->get_msg<CudaLaunchKernelMsg>();
+//    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
+//                                 (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
+//    launchKernel(msg->ptx, msg->kernel + string("Proxy"), msg->conf, msg->param, msg->p_size, cmd->get_stream());
+//    cmd->finish<bool>(true);
+//}
 
 void Conductor::do_mocklaunchkernel(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));

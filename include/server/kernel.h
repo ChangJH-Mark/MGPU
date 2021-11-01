@@ -20,6 +20,7 @@ namespace mgpu {
     } Kernel;
 
     class KernelInstance;
+
     class KernelMgr : public Module {
     public:
         KernelMgr() = default;
@@ -44,19 +45,26 @@ namespace mgpu {
         friend class KernelInstance;
     };
 
-    class KernelInstance{
+    class KernelInstance {
     public:
-        explicit KernelInstance(CudaLaunchKernelMsg* msg, int gpuid);
+        explicit KernelInstance(CudaLaunchKernelMsg *msg, int gpuid);
+
         KernelInstance() = delete;
+
         KernelInstance(const KernelInstance &) = delete;
-        KernelInstance(const KernelInstance&&) = delete;
+
+        KernelInstance(const KernelInstance &&) = delete;
+
         void operator=(KernelInstance) = delete;
 
     public:
         void init(); // init run time configs
-        void run();
-        void set_config(); // dynamic set run time configs
-        void getInfo(); // get run time info
+        void launch();
+        void sync();
+
+        void set_config(int sm_low, int sm_high, int wlimit, stream_t ctrl);    // dynamic set resource configs
+        int get_config();                                                       // get resource configs
+        void get_runinfo(stream_t ctrl);                                        // get kernel run time stage info
 
     private:
         // parameter
@@ -66,7 +74,7 @@ namespace mgpu {
         size_t p_size;
 
         // Kernel device, grid, block, stream
-        int dev;
+        const Device::GPU *gpu;
         dim3 block, grid;
         dim3 grid_v1;
         cudaStream_t stream;
@@ -75,12 +83,13 @@ namespace mgpu {
         CUmodule mod;
         CUfunction func;
         CUfunction func_v1;
-        CUdeviceptr conf_ptr; // runtime config
+        CUdeviceptr devConf; // runtime config
 
         // cpu conf
         int max_block_per_sm;
-        int *conf;
-
+        int *cpuConf;
+        int cbytes; /* cpu conf bytes */
+    public:
         ~KernelInstance();
     };
 }

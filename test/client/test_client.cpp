@@ -27,7 +27,7 @@ void test_sm() {
     mgpu::cudaFreeHost(host_ptr1);
 }
 
-void test_vecAdd() {
+void test_vectorAdd() {
     const int N = 1 << 28;
     void *dev_ptr1 = mgpu::cudaMalloc(N);
     void *dev_ptr2 = mgpu::cudaMalloc(N);
@@ -36,13 +36,15 @@ void test_vecAdd() {
     void *host_ptr = mgpu::cudaMallocHost(N);
     mgpu::stream_t streams;
     mgpu::cudaStreamCreate(&streams);
-    printf("stream: %d\n", streams);
     printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n", dev_ptr1, dev_ptr2, host_ptr);
-    mgpu::cudaLaunchKernel({{200}, {10}, 0, streams}, "/opt/custom/ptx/vecAdd.ptx", "vecAdd", dev_ptr1, dev_ptr2,
+    mgpu::cudaLaunchKernel({{((N / (sizeof(int) * 10) + 1))}, {10}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1, dev_ptr2, dev_ptr2,
                            int(N / sizeof(int)));
     mgpu::cudaStreamSynchronize(streams);
     mgpu::cudaMemcpy(host_ptr, dev_ptr2, N, cudaMemcpyDeviceToHost);
-    printf("0x%x\n", *((int *) host_ptr + (N - sizeof(int)) / sizeof(int)));
+//    for(int i = 0; i < N/sizeof(int); i++) {
+//        printf("%d: 0x%x\n", i, ((int *)(host_ptr))[i]);
+//    }
+    printf("0x%x\n", *((int *)host_ptr + N / sizeof(int) - 1));
     mgpu::cudaFree(dev_ptr1);
     mgpu::cudaFree(dev_ptr2);
     mgpu::cudaFreeHost(host_ptr);
@@ -118,9 +120,9 @@ void test_multiGPUmatrixMul() {
 }
 
 int main() {
-    //test_vecAdd();
-    test_matrixMul();
-    test_multiGPUmatrixMul();
+    test_vectorAdd();
+//    test_matrixMul();
+//    test_multiGPUmatrixMul();
     //test_sm();
     return 0;
 }

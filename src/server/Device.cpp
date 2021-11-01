@@ -43,13 +43,14 @@ void Device::init_gpu(GPU *gpu, uint id) {
     cudaDeviceProp dev_prop{};
     cudaCheck(cudaGetDeviceProperties(&dev_prop, id));
     gpu->ID = id;
-    gpu->max_blocks = dev_prop.maxBlocksPerMultiProcessor;
-    gpu->warp_size = dev_prop.warpSize;
-    gpu->max_warps = dev_prop.maxThreadsPerMultiProcessor / gpu->warp_size;
     gpu->sms = dev_prop.multiProcessorCount;
+    gpu->regs = dev_prop.regsPerMultiprocessor;
     gpu->share_mem = dev_prop.sharedMemPerMultiprocessor;
     gpu->global_mem = dev_prop.totalGlobalMem;
     gpu->const_mem = dev_prop.totalConstMem;
+    gpu->max_blocks = dev_prop.maxBlocksPerMultiProcessor;
+    gpu->warp_size = dev_prop.warpSize;
+    gpu->max_warps = dev_prop.maxThreadsPerMultiProcessor / gpu->warp_size;
     gpu->gmem_max_tp = 1.0 * (dev_prop.memoryClockRate * dev_prop.memoryBusWidth) / (8 * dev_prop.clockRate);
 }
 
