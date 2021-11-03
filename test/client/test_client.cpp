@@ -73,7 +73,7 @@ void test_matrixMul() {
     dim3 grid(wB / threads.x, hA / threads.y, 1);
     mgpu::stream_t stream;
     mgpu::cudaStreamCreate(&stream);
-    mgpu::cudaLaunchKernel({grid, threads, 0, stream}, "/opt/custom/ptx/matrixMul.ptx", "matrixMul", matC, matA, matB,
+    mgpu::cudaLaunchKernel({grid, threads, 0, stream}, "/opt/custom/ptx/matrixMul.cubin", "MatrixMulCUDA", matC, matA, matB,
                            wA, wB);
     mgpu::cudaStreamSynchronize(stream);
     void *h_C = mgpu::cudaMallocHost(sizeof(float) * hA * wB);
@@ -121,7 +121,7 @@ void test_multiGPUmatrixMul() {
 
 int main() {
     test_vectorAdd();
-//    test_matrixMul();
+    test_matrixMul();
 //    test_multiGPUmatrixMul();
     //test_sm();
     return 0;
