@@ -99,7 +99,7 @@ void KernelInstance::init() {
     cpuConf[3] = grid.x;                                   /* origin grid */
     cpuConf[4] = grid.y;                                   /* origin grid */
     cpuConf[5] = grid.z;                                   /* origin grid */
-    for (int i = 6; i < gpu->sms; i++) {                /* sm-worker count */
+    for (int i = 6; i < 6 + gpu->sms; i++) {                /* sm-worker count */
         cpuConf[i] = 0;
     }
     cudaCheck(cudaSetDevice(gpu->ID));
@@ -120,15 +120,28 @@ void KernelInstance::sync() {
     cudaCheck(cudaStreamSynchronize(stream));
 }
 
+void KernelInstance::occupancy_all(stream_t ctrl) {
+    set_config(0, gpu->sms, max_block_per_sm, ctrl);
+}
+
 void KernelInstance::set_config(int sm_low, int sm_high, int wlimit, stream_t ctrl) {
     cpuConf[0] = sm_low + (sm_high << 8) + (wlimit << 16);
     cudaCheck(cudaMemcpyAsync((void *) devConf, cpuConf, sizeof(int), cudaMemcpyHostToDevice, ctrl));
 }
 
 void KernelInstance::get_runinfo(stream_t ctrl) {
-    unsigned long long off = 5 * sizeof(int);
+    unsigned long long off = 6 * sizeof(int);
     cudaCheck(cudaMemcpyAsync(cpuConf + off, (void *) (devConf + off), cbytes - off, cudaMemcpyDeviceToHost, ctrl));
     cudaCheck(cudaStreamSynchronize(ctrl));
+}
+
+void KernelInstance::print_runinfo() {
+    dout(LOG) << "Kernel name : " << name << dendl;
+    dout(LOG) << "assigned sm low: " << (cpuConf[0] & 0xff)  << " sm high: " << ((cpuConf[0] & 0xff00) >> 8) << " worker limit: " << (cpuConf[0] >> 16) << dendl;
+    for(int i = 0; i < gpu->sms; i++) {
+        dout(LOG) << "sm : " << i << " have worker: " << cpuConf[6 + i] << dendl;
+    }
+    dout(LOG) << "===================" << dendl;
 }
 
 int KernelInstance::get_config() {

@@ -217,14 +217,14 @@ namespace mgpu {
 #endif
 
 #define PAGE_SIZE 4096
-#define BAD_UADDR (void *)-1
+#define BAD_UADDR (void *)0
 #define  NOT_READY 0 // NOT IN A WAITING STATUS
 #define READY 1 // IN A WAITING STATUS
 
 typedef struct Futex {
-    void *shm_ptr = (void *)-1;
-    void *size_ptr = (void *)-1;
-    void *data_ptr = (void *)-1;
+    void *shm_ptr = BAD_UADDR;
+    void *size_ptr = BAD_UADDR;
+    void *data_ptr = BAD_UADDR;
     explicit Futex(void *addr){
         shm_ptr = addr;
         size_ptr = (void *)((unsigned long long)shm_ptr + sizeof(void *));
@@ -261,7 +261,7 @@ typedef struct Futex {
     }
 
     bool ready() {
-        return *(int *)shm_ptr == READY;
+        return (*(int *)shm_ptr == READY);
     }
 }Futex;
 

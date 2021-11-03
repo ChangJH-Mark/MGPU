@@ -13,6 +13,7 @@
 #include "server/server.h"
 #include "server/device.h"
 #include "server/kernel.h"
+#include "server/scheduler.h"
 
 #define WORKER_GRID 60
 
@@ -185,9 +186,11 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
 void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     KernelInstance ki(cmd->get_msg<CudaLaunchKernelMsg>(), cmd->get_device());
     ki.init();
+    SCHEDULER->apply_slot(&ki);
     ki.launch();
     ki.sync();
     cmd->finish<bool>(true);
+    SCHEDULER->release_slot(&ki);
 }
 
 //void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {

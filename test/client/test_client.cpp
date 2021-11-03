@@ -37,7 +37,7 @@ void test_vectorAdd() {
     mgpu::stream_t streams;
     mgpu::cudaStreamCreate(&streams);
     printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n", dev_ptr1, dev_ptr2, host_ptr);
-    mgpu::cudaLaunchKernel({{((N / (sizeof(int) * 10) + 1))}, {10}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1, dev_ptr2, dev_ptr2,
+    mgpu::cudaLaunchKernel({{1 << 18}, {256}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1, dev_ptr2, dev_ptr2,
                            int(N / sizeof(int)));
     mgpu::cudaStreamSynchronize(streams);
     mgpu::cudaMemcpy(host_ptr, dev_ptr2, N, cudaMemcpyDeviceToHost);

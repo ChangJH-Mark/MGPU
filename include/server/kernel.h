@@ -6,6 +6,7 @@
 #define FASTGPU_KERNELS_H
 
 #include "server/mod.h"
+#include "server/device.h"
 #include <unordered_map>
 #include <string>
 #include <cuda_runtime.h>
@@ -58,9 +59,12 @@ namespace mgpu {
         void operator=(KernelInstance) = delete;
 
     public:
-        void init(); // init run time configs
-        void launch();
-        void sync();
+        void init();            // init run time configs, default occupancy all
+        void launch();          // launch this Kernel
+        void sync();            // sync this kernel
+        void print_runinfo();
+
+        void occupancy_all(stream_t ctrl);
 
         void set_config(int sm_low, int sm_high, int wlimit, stream_t ctrl);    // dynamic set resource configs
         int get_config();                                                       // get resource configs
@@ -91,6 +95,8 @@ namespace mgpu {
         int cbytes; /* cpu conf bytes */
     public:
         ~KernelInstance();
+
+        friend class Scheduler;
     };
 }
 
