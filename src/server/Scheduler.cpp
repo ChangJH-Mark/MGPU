@@ -38,21 +38,25 @@ void Scheduler::apply_slot(KernelInstance *k) {
 }
 
 void Scheduler::release_slot(KernelInstance *k) {
-    int num = -1;
+    k->finished = true;
+
+    int index = -1;
     if (k == slot[0])
-        num = 0;
+        index = 0;
     else if (k == slot[1])
-        num = 1;
+        index = 1;
     else {
         cout << "release a non-exist Kernel" << endl;
         exit(EXIT_FAILURE);
     }
-    slot[num] = nullptr;
+    run_stat.lock();
+    slot[index] = nullptr;
     run_cnt--;
     if (run_cnt == 1) {
-        auto another = slot[1 - num].load();
+        auto another = slot[1 - index].load();
         another->occupancy_all(ctrl);   // this kernel might stop running
     }
+    run_stat.unlock();
     signal.notify_one();
 }
 
@@ -66,6 +70,10 @@ void Scheduler::sched() {
         // stop running
         if (stopped)
             return;
+        std::lock_guard<std::mutex> lg(run_stat);
+        if(run_cnt == 2)
+            continue;
+
         if (run_cnt != 1 && run_cnt != 0) {
             cout << "wrong run_cnt " << run_cnt << " exception" << endl;
             exit(EXIT_FAILURE);
@@ -107,6 +115,9 @@ bool Scheduler::find_corun(KernelInstance *running, KernelInstance **candidate) 
     int r_prop = running->prop.property, c_prop = 0;
 
     for (auto c = pending.begin(); c != pending.end(); c++) {
+        if(running->is_finished())
+            goto single;
+
         if (running->prop.property >= high_bound && (*c)->prop.property >= high_bound)
             continue;
         else if (running->prop.property <= low_bound && (*c)->prop.property <= low_bound)
@@ -120,6 +131,9 @@ bool Scheduler::find_corun(KernelInstance *running, KernelInstance **candidate) 
 
         // find every possible combination
         for (int i = 1; i < running->max_block_per_sm; i++) {
+            if(running->is_finished())
+                goto single;
+
             int j = gpu->max_blocks - i;
             j = min(j, (int) (gpu->max_warps - i * r_warps) / c_warps);                       /* warps limit */
             j = min(j, (int) (gpu->regs - i * r_regs) / c_regs);                              /* registers limit */
@@ -146,10 +160,18 @@ bool Scheduler::find_corun(KernelInstance *running, KernelInstance **candidate) 
         } // loop for config
     } // for each pending
 
+    single:
+    if(running->is_finished()) {
+        *candidate = pending.front();
+        pending.pop_front();
+        return true;
+    }
+
     // not corun
     if (res == std::pair<int, int>(-1, -1))
         return false;
 
+    // corun
     *candidate = *best_it;
     running->set_config(0, gpu->sms, res.first, ctrl);
     (*best_it)->set_config(0, gpu->sms, res.second, ctrl);

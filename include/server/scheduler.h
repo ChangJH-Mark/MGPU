@@ -54,6 +54,8 @@ namespace mgpu {
 
         atomic<KernelInstance *> slot[2]; // two run slot for KernelInstance
         atomic<int> run_cnt;
+        mutex run_stat;                 // state lock, for slots & run_cnt
+
         thread s;                       // scheduler thread
 
         void sched(); // schedule thread

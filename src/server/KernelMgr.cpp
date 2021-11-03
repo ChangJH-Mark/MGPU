@@ -61,7 +61,7 @@ int calMaxBlock(const Device::GPU *gpu, const Kernel &prop, dim3 &block) {
     return max_blocks;
 }
 
-KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) {
+KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) :finished(false) {
     // name
     name = msg->kernel;
     if (KERNELMGR->kns.find(name) == KERNELMGR->kns.end()) {
@@ -121,7 +121,8 @@ void KernelInstance::sync() {
 }
 
 void KernelInstance::occupancy_all(stream_t ctrl) {
-    set_config(0, gpu->sms, max_block_per_sm, ctrl);
+    if((cpuConf[0] >> 16) != max_block_per_sm)
+        set_config(0, gpu->sms, max_block_per_sm, ctrl);
 }
 
 void KernelInstance::set_config(int sm_low, int sm_high, int wlimit, stream_t ctrl) {

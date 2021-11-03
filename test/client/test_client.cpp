@@ -28,7 +28,7 @@ void test_sm() {
 }
 
 void test_vectorAdd() {
-    const int N = 1 << 28;
+    const int N = 1 << 24;
     void *dev_ptr1 = mgpu::cudaMalloc(N);
     void *dev_ptr2 = mgpu::cudaMalloc(N);
     mgpu::cudaMemset(dev_ptr1, 0x1, N);
@@ -37,7 +37,7 @@ void test_vectorAdd() {
     mgpu::stream_t streams;
     mgpu::cudaStreamCreate(&streams);
     printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n", dev_ptr1, dev_ptr2, host_ptr);
-    mgpu::cudaLaunchKernel({{1 << 18}, {256}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1, dev_ptr2, dev_ptr2,
+    mgpu::cudaLaunchKernel({{1 << 14}, {256}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1, dev_ptr2, dev_ptr2,
                            int(N / sizeof(int)));
     mgpu::cudaStreamSynchronize(streams);
     mgpu::cudaMemcpy(host_ptr, dev_ptr2, N, cudaMemcpyDeviceToHost);

@@ -63,6 +63,7 @@ namespace mgpu {
         void launch();          // launch this Kernel
         void sync();            // sync this kernel
         void print_runinfo();
+        bool is_finished() {return finished;}        // indicate if Kernel Instance stopped
 
         void occupancy_all(stream_t ctrl);
 
@@ -71,6 +72,8 @@ namespace mgpu {
         void get_runinfo(stream_t ctrl);                                        // get kernel run time stage info
 
     private:
+        bool finished;          // signal variable, if kernel finished
+        
         // parameter
         Kernel prop;
         std::string name;
