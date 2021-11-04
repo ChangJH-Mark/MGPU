@@ -83,15 +83,15 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
             perror("fuck to shmget");
             exit(errno);
         } else {
-           // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id  << dendl;
-            if(0 > shmctl(shm_id, SHM_LOCK, nullptr)) {
+            // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " shm_id: " << shm_id  << dendl;
+            if (0 > shmctl(shm_id, SHM_LOCK, nullptr)) {
                 perror("fail to lock shmget");
                 exit(1);
             }
         }
         host_ptr = shmat(shm_id, nullptr, 0);
-        auto & shms_id = cmd->get_worker()->shms_id;
-        if(!shms_id.count(host_ptr)) {
+        auto &shms_id = cmd->get_worker()->shms_id;
+        if (!shms_id.count(host_ptr)) {
             shms_id[host_ptr] = shm_id;
             //dout(DEBUG) << " cmd_id: " << cmd->get_id() << " share memory address: " << host_ptr  << dendl;
         } else {
@@ -101,14 +101,14 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
         }
     }
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
-   // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished "  << dendl;
+    // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished "  << dendl;
 }
 
 void Conductor::do_cudafree(const std::shared_ptr<Command> &cmd) {
-   // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr  << dendl;
+    // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free: " << cmd->get_msg<CudaFreeMsg>()->devPtr  << dendl;
     if (false) {
         MEMPOOL->gpuMemoryDeAlloc(cmd->get_device(), cmd->get_msg<CudaFreeMsg>()->devPtr, cmd->get_stream());
-       // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free with pool: " << cmd->get_msg<CudaFreeMsg>()->devPtr << dendl;
+        // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " free with pool: " << cmd->get_msg<CudaFreeMsg>()->devPtr << dendl;
     } else {
         cudaCheck(::cudaSetDevice(cmd->get_device()));
         auto dev_ptr = cmd->get_msg<CudaFreeMsg>()->devPtr;
@@ -123,7 +123,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
     if (false) {
         MEMPOOL->cpuMemoryDeAlloc(host_ptr);
     } else {
-        auto & shms_id = cmd->get_worker()->shms_id;
+        auto &shms_id = cmd->get_worker()->shms_id;
         if (0 > shmdt(host_ptr)) {
             perror("server fail to release share memory");
             exit(1);
@@ -160,7 +160,7 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
     CUmodule cuModule;
     cudaCheck(static_cast<cudaError_t>(cuModuleLoad(&cuModule, ptx.c_str())));
     CUfunction func;
-    dout(DEBUG) << "ptx: " << ptx << " kernel: " << kname << " address :" << func<< dendl;
+    dout(DEBUG) << "ptx: " << ptx << " kernel: " << kname << " address :" << func << dendl;
     cudaCheck(static_cast<cudaError_t>(cuModuleGetFunction(&func, cuModule, kname.c_str())));
 
     void *extra[] = {
@@ -199,7 +199,8 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_mocklaunchkernel(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<MockLaunchKernelMsg>();
-    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid, (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
+    msg->p_size = fillParameters(msg->param, msg->p_size, 0, 6, msg->conf.grid,
+                                 (msg->conf.grid.x * msg->conf.grid.y * msg->conf.grid.z));
     cmd->finish<bool>(true);
 }
 
@@ -214,13 +215,13 @@ void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
 void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     dout(DEBUG) << " synchronize stream: at device: " << cmd->get_device() << " stream: "
-                << cmd->get_stream()  << dendl;
+                << cmd->get_stream() << dendl;
     cudaCheck(::cudaStreamSynchronize(cmd->get_stream()));
     cmd->finish<bool>(true);
 }
 
 void Conductor::do_cudagetdevicecount(const std::shared_ptr<Command> &cmd) {
-    dout(DEBUG) << " cuda get device count "  << dendl;
+    dout(DEBUG) << " cuda get device count " << dendl;
     int count;
     cudaCheck(::cudaGetDeviceCount(&count));
     cmd->finish<int>(count);
@@ -228,14 +229,14 @@ void Conductor::do_cudagetdevicecount(const std::shared_ptr<Command> &cmd) {
 
 void Conductor::do_cudaeventcreate(const std::shared_ptr<Command> &cmd) {
     cudaEvent_t event;
-    dout(DEBUG) << " create event at device: " << cmd->get_device() << " stream: " << cmd->get_stream()  << dendl;
+    dout(DEBUG) << " create event at device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cudaCheck(::cudaEventCreate(&event));
     cmd->finish<cudaEvent_t>(event);
 }
 
 void Conductor::do_cudaeventdestroy(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaEventDestroy(cmd->get_msg<CudaEventDestroyMsg>()->event));
-    dout(DEBUG) << " event destroy device: " << cmd->get_device() << " stream: " << cmd->get_stream()  << dendl;
+    dout(DEBUG) << " event destroy device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cmd->finish<bool>(true);
 }
 
@@ -258,58 +259,68 @@ void Conductor::do_cudaeventelapsedtime(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaEventElapsedTimeMsg>();
     float ret;
-    dout(DEBUG) << " start device: " << cmd->get_device() << " stream: " << cmd->get_stream() <<dendl;
+    dout(DEBUG) << " start device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cudaCheck(::cudaEventElapsedTime(&ret, msg->start, msg->end));
-    dout(DEBUG) << " end device: " << cmd->get_device() << " stream: " << cmd->get_stream() <<dendl;
+    dout(DEBUG) << " end device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cmd->finish(ret);
 }
 
-bool singleTask(Task *t, int dev);
+bool singleTask(Task *t, int dev, bool *success, int *bind_dev, char result[128]);
 
 void Conductor::do_multask(const std::shared_ptr<Command> &cmd) {
     auto msg = cmd->get_msg<MulTaskMsg>();
     int dev_count = DEVICES->counts();
     future<bool> result[MAX_TASK_NUM];
+    mgpu::MulTaskRet res;
+
     for (int i = 0; i < msg->task_num; i++) {
         int dev = i % dev_count;
-        auto ret = std::async(&singleTask, (msg->task + i), dev);
+        res.success[i] = false;
+        auto ret = std::async(&singleTask, (msg->task + i), dev, res.success + i, res.bind_dev + i, res.msg[i]);
         result[i] = std::move(ret);
     }
-    int success = 0;
-    string err_msg;
+
     for (int i = 0; i < msg->task_num; i++) {
-        if (!result[i].get()) {
-            success = 1;
-            err_msg += "task #" + to_string(i + 1) + " failed! \n";
-        }
+        result[i].get();
     }
-    mgpu::MulTaskRet ret{success};
-    strcpy(ret.msg, err_msg.c_str());
-    cmd->finish<MulTaskRet>(ret);
+    cmd->finish<MulTaskRet>(res);
 }
 
-bool singleTask(Task *t, int dev) {
-    cudaCheck(cudaSetDevice(dev));
+#define COPYMESSAGE(x) \
+{                      \
+   cudaError_t err = (cudaError_t) (x); \
+   if(err != cudaSuccess) {             \
+        memcpy(result, cudaGetErrorString(err), 128); \
+        return false;\
+   }\
+}
+
+bool singleTask(Task *t, int dev, bool *success, int *bind_dev, char result[128]) {
+    COPYMESSAGE(cudaSetDevice(dev));
+    *bind_dev = dev;
+
     unsigned int p_size = 0;
     stream_t stream;
-    cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    COPYMESSAGE(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     // copy host data to GPU
     for (int i = 0; i < t->hdn; i++) {
         void *dev_ptr;
-        cudaCheck(cudaMalloc(&dev_ptr, t->hds[i]));
+        COPYMESSAGE(cudaMalloc(&dev_ptr, t->hds[i]));
         void *src_ptr = reinterpret_cast<void *>(*((unsigned long long *) (t->param + p_size)));
-        cudaCheck(cudaMemcpy(dev_ptr, src_ptr, t->hds[i], cudaMemcpyHostToDevice));
+        COPYMESSAGE(cudaMemcpy(dev_ptr, src_ptr, t->hds[i], cudaMemcpyHostToDevice));
         p_size = fillParameters(t->param, p_size, dev_ptr);
     }
     // allocate GPU for result
     for (int i = 0; i < t->dn; i++) {
         void *dev_ptr;
-        cudaCheck(cudaMalloc(&dev_ptr, t->dev_alloc_size[i]));
+        COPYMESSAGE(cudaMalloc(&dev_ptr, t->dev_alloc_size[i]));
         p_size = fillParameters(t->param, p_size, dev_ptr);
+        memcpy(result + i * sizeof(dev_ptr), &dev_ptr, sizeof(dev_ptr));
     }
     launchKernel(t->ptx, t->kernel, t->conf, t->param, t->p_size, stream);
-    cudaCheck(cudaStreamSynchronize(stream));
-    return true;
+    COPYMESSAGE(cudaStreamSynchronize(stream));
+    *success = true;
+    return *success;
 }
 
 void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
@@ -322,10 +333,10 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
         perror("fail to shmget");
         exit(1);
     } else {
-        dout(DEBUG) << " shm_id: " << shm_id <<dendl;
+        dout(DEBUG) << " shm_id: " << shm_id << dendl;
     }
     void *res = shmat(shm_id, nullptr, 0);
-    auto & shms_id = cmd->get_worker()->shms_id;
+    auto &shms_id = cmd->get_worker()->shms_id;
     if (!shms_id.count(res)) {
         shms_id[res] = shm_id;
     } else {
@@ -339,7 +350,7 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
     std::vector<cudaEvent_t> ends(device->counts());
 
     for (int i = 0; i < device->counts(); i++) {
-        dout(DEBUG) << " device: " << i << " do matrix multi " <<dendl;
+        dout(DEBUG) << " device: " << i << " do matrix multi " << dendl;
         cudaCheck(::cudaSetDevice(i));
         cudaCheck(::cudaEventCreateWithFlags(&(starts[i]), cudaEventBlockingSync));
         cudaCheck(::cudaEventCreateWithFlags(&(ends[i]), cudaEventBlockingSync));
@@ -373,6 +384,6 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
     for (int i = 0; i < device->counts(); i++) {
         cudaCheck(::cudaEventSynchronize(ends[i]));
     }
-    dout(DEBUG) << " finish " <<dendl;
+    dout(DEBUG) << " finish " << dendl;
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{res, shm_id});
 }

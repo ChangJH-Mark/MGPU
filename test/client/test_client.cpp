@@ -124,13 +124,14 @@ void test_multiGPU() {
     const int TaskNum = 2;
     mgpu::Task tasks[TaskNum];
     cout << "sizeof task is " << sizeof(mgpu::Task) << endl;
+    char *h_ptr_1, *h_ptr_2;
     for (auto & task : tasks) {
         task.hdn = 2;
         task.hds[0] = N;
         task.hds[1] = N;
 
-        int *h_ptr_1 = (int *)mgpu::cudaMallocHost(N);
-        int *h_ptr_2 = (int *)mgpu::cudaMallocHost(N);
+        h_ptr_1 = (char *)mgpu::cudaMallocHost(N);
+        h_ptr_2 = (char *)mgpu::cudaMallocHost(N);
         memset(h_ptr_1, 0x1, N);
         memset(h_ptr_2, 0x2, N);
         task.p_size = fillParameters(task.param, 0, h_ptr_1, h_ptr_2, (void *)NULL, N / sizeof(int));
@@ -142,7 +143,17 @@ void test_multiGPU() {
         task.conf = {.grid = {(N/sizeof(int) / 256) + 1},.block= 256};
     }
     auto ret = mgpu::MulTaskMulGPU(TaskNum, tasks);
-    cout << " final return is " << ret.success << " message is " << ret.msg << endl;
+    for(int i = 0;i<TaskNum;i++) {
+        cout << "task " << i << " success is " << ret.success[i] << " dev: " << ret.bind_dev[i] << endl;
+        cout << "start check result ptr" << endl;
+        int * result = (int *)*(unsigned long long*)ret.msg[i];
+        mgpu::cudaMemcpy(h_ptr_1, result, N, cudaMemcpyDeviceToHost);
+        for(int j = 0; j< N;j++) {
+            if(h_ptr_1[j] != 0x03)
+                cout << "for task " << i << " result " << j << " is not 0x03 but " << hex << (int)h_ptr_1[j] << dec << endl;
+        }
+        cout << hex << result << dec << endl;
+    }
 }
 
 int main() {

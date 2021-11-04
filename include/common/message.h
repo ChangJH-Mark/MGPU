@@ -206,8 +206,9 @@ namespace mgpu {
     } CudaMallocHostRet;
 
     typedef struct MulTaskRet {
-        int success;
-        char msg[1024]; // error message
+        bool success[MAX_TASK_NUM]; // indicate if task success
+        int bind_dev[MAX_TASK_NUM]; // return task binded task
+        char msg[MAX_TASK_NUM][128];// necessary gpu memory address OR error message
     } MulTaskRet;
 }
 
@@ -225,11 +226,13 @@ typedef struct Futex {
     void *shm_ptr = BAD_UADDR;
     void *size_ptr = BAD_UADDR;
     void *data_ptr = BAD_UADDR;
-    explicit Futex(void *addr){
+
+    explicit Futex(void *addr) {
         shm_ptr = addr;
-        size_ptr = (void *)((unsigned long long)shm_ptr + sizeof(void *));
-        data_ptr = (void *)((unsigned long long)size_ptr + sizeof(void *));
+        size_ptr = (void *) ((unsigned long long) shm_ptr + sizeof(void *));
+        data_ptr = (void *) ((unsigned long long) size_ptr + sizeof(void *));
     }
+
     Futex() {
         shm_ptr = BAD_UADDR;
         size_ptr = BAD_UADDR;
@@ -237,32 +240,34 @@ typedef struct Futex {
     }
 
     void setSize(int size) {
-        *(int *)size_ptr = size;
+        *(int *) size_ptr = size;
     }
+
     void copyTo(void *dst, int size) {
         setSize(size);
         memcpy(dst, data_ptr, size);
     }
+
     void setData(void *src, int size) {
         setSize(size);
         memcpy(data_ptr, src, size);
     }
 
     void setState(int state) {
-        *(int *)shm_ptr = state;
+        *(int *) shm_ptr = state;
     }
 
     int size() {
-        return *(int *)size_ptr;
+        return *(int *) size_ptr;
     }
 
     int state() {
-        return *(int *)shm_ptr;
+        return *(int *) shm_ptr;
     }
 
     bool ready() {
-        return (*(int *)shm_ptr == READY);
+        return (*(int *) shm_ptr == READY);
     }
-}Futex;
+} Futex;
 
 #endif //FASTGPU_MESSAGE_H
