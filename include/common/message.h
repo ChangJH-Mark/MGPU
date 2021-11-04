@@ -32,7 +32,7 @@
 
 #define MAX_HOST_ADDR_NUM 4
 #define MAX_DEVICE_ADDR_NUM 4
-#define MAX_TASK_NUM 4
+#define MAX_TASK_NUM 2
 
 inline const char *get_type_msg(uint type) {
     switch (type) {

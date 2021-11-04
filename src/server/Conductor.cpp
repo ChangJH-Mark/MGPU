@@ -15,8 +15,6 @@
 #include "server/kernel.h"
 #include "server/scheduler.h"
 
-#define WORKER_GRID 60
-
 using namespace mgpu;
 
 void Conductor::init() {
@@ -170,17 +168,13 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
             CU_LAUNCH_PARAM_BUFFER_SIZE, &size,
             CU_LAUNCH_PARAM_END
     };
-    unsigned int gx = WORKER_GRID, gy = 1, gz = 1;
-//    string suffix("Proxy");
-//    if (kname.size() > suffix.size() && 0 == kname.compare(kname.size() - suffix.size(), suffix.size(), suffix)) {
-//        gx = conf.grid.x, gy = conf.grid.y, gz = conf.grid.z;
-//    }
-    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, gx, gy, gz,
+    cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, conf.grid.x, conf.grid.y, conf.grid.z,
                                                         conf.block.x, conf.block.y, conf.block.z,
                                                         conf.share_memory,
                                                         stream,
                                                         nullptr, extra)));
     cudaCheck(static_cast<cudaError_t>(cuModuleUnload(cuModule)));
+    cudaCheck(cudaStreamSynchronize(stream));
 }
 
 void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
@@ -270,6 +264,54 @@ void Conductor::do_cudaeventelapsedtime(const std::shared_ptr<Command> &cmd) {
     cmd->finish(ret);
 }
 
+bool singleTask(Task *t, int dev);
+
+void Conductor::do_multask(const std::shared_ptr<Command> &cmd) {
+    auto msg = cmd->get_msg<MulTaskMsg>();
+    int dev_count = DEVICES->counts();
+    future<bool> result[MAX_TASK_NUM];
+    for (int i = 0; i < msg->task_num; i++) {
+        int dev = i % dev_count;
+        auto ret = std::async(&singleTask, (msg->task + i), dev);
+        result[i] = std::move(ret);
+    }
+    int success = 0;
+    string err_msg;
+    for (int i = 0; i < msg->task_num; i++) {
+        if (!result[i].get()) {
+            success = 1;
+            err_msg += "task #" + to_string(i + 1) + " failed! \n";
+        }
+    }
+    mgpu::MulTaskRet ret{success};
+    strcpy(ret.msg, err_msg.c_str());
+    cmd->finish<MulTaskRet>(ret);
+}
+
+bool singleTask(Task *t, int dev) {
+    cudaCheck(cudaSetDevice(dev));
+    unsigned int p_size = 0;
+    stream_t stream;
+    cudaCheck(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    // copy host data to GPU
+    for (int i = 0; i < t->hdn; i++) {
+        void *dev_ptr;
+        cudaCheck(cudaMalloc(&dev_ptr, t->hds[i]));
+        void *src_ptr = reinterpret_cast<void *>(*((unsigned long long *) (t->param + p_size)));
+        cudaCheck(cudaMemcpy(dev_ptr, src_ptr, t->hds[i], cudaMemcpyHostToDevice));
+        p_size = fillParameters(t->param, p_size, dev_ptr);
+    }
+    // allocate GPU for result
+    for (int i = 0; i < t->dn; i++) {
+        void *dev_ptr;
+        cudaCheck(cudaMalloc(&dev_ptr, t->dev_alloc_size[i]));
+        p_size = fillParameters(t->param, p_size, dev_ptr);
+    }
+    launchKernel(t->ptx, t->kernel, t->conf, t->param, t->p_size, stream);
+    cudaCheck(cudaStreamSynchronize(stream));
+    return true;
+}
+
 void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
     auto msg = cmd->get_msg<MatrixMulMsg>();
     Matrix A = msg->A;
@@ -321,8 +363,8 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
                 CU_LAUNCH_PARAM_BUFFER_SIZE, &p_size,
                 CU_LAUNCH_PARAM_END
         };
-        cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1, conf.block.x, conf.block.y,
-                                                            conf.block.z, conf.share_memory, 0, nullptr, extra)));
+//        cudaCheck(static_cast<cudaError_t>(::cuLaunchKernel(func, WORKER_GRID, 1, 1, conf.block.x, conf.block.y,
+//                                                            conf.block.z, conf.share_memory, 0, nullptr, extra)));
         int area = A.height * B.width / device->counts();
         cudaCheck(::cudaMemcpyAsync(static_cast<float *>(res) + area * i, static_cast<float *>(dev_C) + area * i,
                                     sizeof(float) * area, cudaMemcpyDeviceToHost, 0));
@@ -333,49 +375,4 @@ void Conductor::do_matrixmultgpu(const std::shared_ptr<Command> &cmd) {
     }
     dout(DEBUG) << " finish " <<dendl;
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{res, shm_id});
-}
-
-bool singleTask(Task *t, int dev);
-
-void Conductor::do_multask(const std::shared_ptr<Command> &cmd) {
-    auto msg = cmd->get_msg<MulTaskMsg>();
-    int dev_count = DEVICES->counts();
-    future<bool> result[MAX_TASK_NUM];
-    for (int i = 0; i < msg->task_num; i++) {
-        int dev = i % dev_count;
-        auto ret = std::async(&singleTask, (msg->task + i), dev);
-        result[i] = std::move(ret);
-    }
-    int success = 0;
-    string err_msg;
-    for (int i = 0; i < msg->task_num; i++) {
-        if (!result[i].get()) {
-            success = 1;
-            err_msg += "task #" + to_string(i + 1) + " failed! \n";
-        }
-    }
-    mgpu::MulTaskRet ret{success};
-    strcpy(ret.msg, err_msg.c_str());
-    cmd->finish<MulTaskRet>(ret);
-}
-
-bool singleTask(Task *t, int dev) {
-    cudaCheck(cudaSetDevice(dev));
-    unsigned int p_size = 0;
-    // copy host data to GPU
-    for (int i = 0; i < t->hdn; i++) {
-        void *dev_ptr;
-        cudaCheck(cudaMalloc(&dev_ptr, t->hds[i]));
-        void *src_ptr = reinterpret_cast<void *>(*((unsigned long long *) (t->param + p_size)));
-        cudaCheck(cudaMemcpy(dev_ptr, src_ptr, t->hds[i], cudaMemcpyHostToDevice));
-        p_size = fillParameters(t->param, p_size, dev_ptr);
-    }
-    // allocate GPU for result
-    for (int i = 0; i < t->dn; i++) {
-        void *dev_ptr;
-        cudaCheck(cudaMalloc(&dev_ptr, t->dev_alloc_size[i]));
-        p_size = fillParameters(t->param, p_size, dev_ptr);
-    }
-    launchKernel(t->ptx, t->kernel, t->conf, t->param, t->p_size);
-    return true;
 }

@@ -61,7 +61,7 @@ namespace mgpu {
 
         std::future<void *> send(MatrixMulMsg *msg);
 
-        std::future<MulTaskRet> send(MulTaskMsg *msg);
+        MulTaskRet send(MulTaskMsg *msg);
 
         // only used for make_shared
         IPCClient() : conn(-1) {

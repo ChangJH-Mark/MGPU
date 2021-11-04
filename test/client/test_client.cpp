@@ -37,14 +37,15 @@ void test_vectorAdd() {
     mgpu::stream_t streams;
     mgpu::cudaStreamCreate(&streams);
     printf("dev_ptr1: 0x%lx dev_ptr2: 0x%lx, host_ptr: 0x%lx\n", dev_ptr1, dev_ptr2, host_ptr);
-    mgpu::cudaLaunchKernel({{1 << 14}, {256}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1, dev_ptr2, dev_ptr2,
+    mgpu::cudaLaunchKernel({{1 << 14}, {256}, 0, streams}, "/opt/custom/ptx/vectorAdd.cubin", "vectorAdd", dev_ptr1,
+                           dev_ptr2, dev_ptr2,
                            int(N / sizeof(int)));
     mgpu::cudaStreamSynchronize(streams);
     mgpu::cudaMemcpy(host_ptr, dev_ptr2, N, cudaMemcpyDeviceToHost);
 //    for(int i = 0; i < N/sizeof(int); i++) {
 //        printf("%d: 0x%x\n", i, ((int *)(host_ptr))[i]);
 //    }
-    printf("0x%x\n", *((int *)host_ptr + N / sizeof(int) - 1));
+    printf("0x%x\n", *((int *) host_ptr + N / sizeof(int) - 1));
     mgpu::cudaFree(dev_ptr1);
     mgpu::cudaFree(dev_ptr2);
     mgpu::cudaFreeHost(host_ptr);
@@ -57,9 +58,9 @@ void test_matrixMul() {
     void *h_A = mgpu::cudaMallocHost(sizeof(float) * wA * hA);
     void *h_B = mgpu::cudaMallocHost(sizeof(float) * wB * hB);
     for (int i = 0; i < wA * hA; i++)
-       static_cast<float*>(h_A)[i] = 1.0f;
+        static_cast<float *>(h_A)[i] = 1.0f;
     for (int i = 0; i < wB * hB; i++)
-        static_cast<float*>(h_B)[i] = 0.1f;
+        static_cast<float *>(h_B)[i] = 0.1f;
     void *matA = mgpu::cudaMalloc(sizeof(float) * hA * wA);
     void *matB = mgpu::cudaMalloc(sizeof(float) * hB * wB);
     void *matC = mgpu::cudaMalloc(sizeof(float) * hA * wB);
@@ -73,7 +74,8 @@ void test_matrixMul() {
     dim3 grid(wB / threads.x, hA / threads.y, 1);
     mgpu::stream_t stream;
     mgpu::cudaStreamCreate(&stream);
-    mgpu::cudaLaunchKernel({grid, threads, 0, stream}, "/opt/custom/ptx/matrixMul.cubin", "MatrixMulCUDA", matC, matA, matB,
+    mgpu::cudaLaunchKernel({grid, threads, 0, stream}, "/opt/custom/ptx/matrixMul.cubin", "MatrixMulCUDA", matC, matA,
+                           matB,
                            wA, wB);
     mgpu::cudaStreamSynchronize(stream);
     void *h_C = mgpu::cudaMallocHost(sizeof(float) * hA * wB);
@@ -82,10 +84,9 @@ void test_matrixMul() {
     mgpu::cudaFree(matA);
     mgpu::cudaFree(matB);
     mgpu::cudaFree(matC);
-    for(int i =0; i < block_size; i++)
-    {
-        for(int j = 0; j< block_size; j++)
-            cout << static_cast<float *>(h_C)[i * block_size +j] << "\t";
+    for (int i = 0; i < block_size; i++) {
+        for (int j = 0; j < block_size; j++)
+            cout << static_cast<float *>(h_C)[i * block_size + j] << "\t";
         cout << endl;
     }
     mgpu::cudaFreeHost(h_C);
@@ -99,18 +100,17 @@ void test_multiGPUmatrixMul() {
     void *h_B = mgpu::cudaMallocHost(sizeof(float) * wB * hB);
     // initial matrix
     for (int i = 0; i < wA * hA; i++)
-        static_cast<float*>(h_A)[i] = 1.0f;
+        static_cast<float *>(h_A)[i] = 1.0f;
     for (int i = 0; i < wB * hB; i++)
-        static_cast<float*>(h_B)[i] = 0.1f;
+        static_cast<float *>(h_B)[i] = 0.1f;
     dim3 threads(block_size, block_size);
     dim3 grid(wB / threads.x, hA / threads.y);
     auto res = mgpu::matrixMul_MGPU({h_A, wA, hA}, {h_B, wB, hB}, {grid, threads});
-    auto value = static_cast<float*>(res.get());
-    if(!value)
+    auto value = static_cast<float *>(res.get());
+    if (!value)
         exit(1);
-    for(int i =0; i<hA; i++)
-    {
-        for(int j = 0; j<wB; j++) {
+    for (int i = 0; i < hA; i++) {
+        for (int j = 0; j < wB; j++) {
             cout << value[i * wA + j] << " ";
         }
         cout << endl;
@@ -119,9 +119,36 @@ void test_multiGPUmatrixMul() {
     mgpu::cudaFreeHost(h_B);
 }
 
+void test_multiGPU() {
+    const int N = 1 << 24;
+    const int TaskNum = 2;
+    mgpu::Task tasks[TaskNum];
+    cout << "sizeof task is " << sizeof(mgpu::Task) << endl;
+    for (auto & task : tasks) {
+        task.hdn = 2;
+        task.hds[0] = N;
+        task.hds[1] = N;
+
+        int *h_ptr_1 = (int *)mgpu::cudaMallocHost(N);
+        int *h_ptr_2 = (int *)mgpu::cudaMallocHost(N);
+        memset(h_ptr_1, 0x1, N);
+        memset(h_ptr_2, 0x2, N);
+        task.p_size = fillParameters(task.param, 0, h_ptr_1, h_ptr_2, (void *)NULL, N / sizeof(int));
+
+        task.dn = 1;
+        task.dev_alloc_size[0] = N;
+        strcpy(task.ptx, "/opt/custom/ptx/vectorAdd.cubin");
+        strcpy(task.kernel, "vectorAdd");
+        task.conf = {.grid = {(N/sizeof(int) / 256) + 1},.block= 256};
+    }
+    auto ret = mgpu::MulTaskMulGPU(TaskNum, tasks);
+    cout << " final return is " << ret.success << " message is " << ret.msg << endl;
+}
+
 int main() {
-    test_vectorAdd();
-    test_matrixMul();
+//    test_vectorAdd();
+//    test_matrixMul();
+    test_multiGPU();
 //    test_multiGPUmatrixMul();
     //test_sm();
     return 0;

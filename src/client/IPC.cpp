@@ -243,12 +243,9 @@ std::future<void *> IPCClient::send(MatrixMulMsg *msg) {
 //    return std::async(func);
 }
 
-std::future<MulTaskRet> IPCClient::send(MulTaskMsg *msg) {
-//     send_msg( msg, sizeof(MulTaskMsg), 0, "fail to send MulTaskMulGPU message");
-//    auto func = [cli, ipc = single_instance]() -> MulTaskRet {
-//        MulTaskRet ret;
-//        ipc-> recv_msg( &ret, sizeof(ret), 0, "error to receive MulTaskMulGPU return");
-//        return ret;
-//    };
-//    return std::async(func);
+MulTaskRet IPCClient::send(MulTaskMsg *msg) {
+    send_msg(msg, sizeof(MulTaskMsg), "fail to send MulTaskMulGPU message");
+    MulTaskRet ret;
+    recv_msg(&ret, sizeof(ret), "error to receive MulTaskMulGPU return");
+    return ret;
 }
