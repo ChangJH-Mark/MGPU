@@ -309,13 +309,14 @@ bool singleTask(Task *t, int dev, bool *success, int *bind_dev, char result[128]
         void *src_ptr = reinterpret_cast<void *>(*((unsigned long long *) (t->param + p_size)));
         COPYMESSAGE(cudaMemcpy(dev_ptr, src_ptr, t->hds[i], cudaMemcpyHostToDevice));
         p_size = fillParameters(t->param, p_size, dev_ptr);
+        memcpy(result + i * sizeof(dev_ptr), &dev_ptr, sizeof(dev_ptr));
     }
     // allocate GPU for result
     for (int i = 0; i < t->dn; i++) {
         void *dev_ptr;
         COPYMESSAGE(cudaMalloc(&dev_ptr, t->dev_alloc_size[i]));
         p_size = fillParameters(t->param, p_size, dev_ptr);
-        memcpy(result + i * sizeof(dev_ptr), &dev_ptr, sizeof(dev_ptr));
+        memcpy(result + (i + t->hdn) * sizeof(dev_ptr), &dev_ptr, sizeof(dev_ptr));
     }
     launchKernel(t->ptx, t->kernel, t->conf, t->param, t->p_size, stream);
     COPYMESSAGE(cudaStreamSynchronize(stream));

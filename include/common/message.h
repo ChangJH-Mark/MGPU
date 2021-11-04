@@ -32,7 +32,7 @@
 
 #define MAX_HOST_ADDR_NUM 4
 #define MAX_DEVICE_ADDR_NUM 4
-#define MAX_TASK_NUM 2
+#define MAX_TASK_NUM 6
 
 inline const char *get_type_msg(uint type) {
     switch (type) {
@@ -98,13 +98,13 @@ namespace mgpu {
     typedef struct Task {
         uint hdn; // data number in host
         uint dn;  // extra device memory num needed
-        size_t hds[MAX_HOST_ADDR_NUM]; // data size in host
-        size_t dev_alloc_size[MAX_DEVICE_ADDR_NUM]; // extra device memory size
+        uint hds[MAX_HOST_ADDR_NUM]; // data size in host
+        uint dev_alloc_size[MAX_DEVICE_ADDR_NUM]; // extra device memory size
         LaunchConf conf;
-        char ptx[128]{}; // ptx ptx
+        char ptx[64]{}; // ptx ptx
         char kernel[128]{}; // kernel symbol
-        char param[1024]{}; // pre-filled with host data address and extra device mem empty addr
-        size_t p_size{};    // param size
+        char param[256]{}; // pre-filled with host data address and extra device mem empty addr
+        uint p_size{};    // param size
     } Task;
 
     typedef struct AbMsg {

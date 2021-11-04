@@ -121,9 +121,8 @@ void test_multiGPUmatrixMul() {
 
 void test_multiGPU() {
     const int N = 1 << 24;
-    const int TaskNum = 2;
+    const int TaskNum = 6;
     mgpu::Task tasks[TaskNum];
-    cout << "sizeof task is " << sizeof(mgpu::Task) << endl;
     char *h_ptr_1, *h_ptr_2;
     for (auto & task : tasks) {
         task.hdn = 2;
@@ -145,14 +144,13 @@ void test_multiGPU() {
     auto ret = mgpu::MulTaskMulGPU(TaskNum, tasks);
     for(int i = 0;i<TaskNum;i++) {
         cout << "task " << i << " success is " << ret.success[i] << " dev: " << ret.bind_dev[i] << endl;
-        cout << "start check result ptr" << endl;
-        int * result = (int *)*(unsigned long long*)ret.msg[i];
+        void *result = (void *)*(unsigned long long *)(ret.msg[i] + 2 * sizeof(void *));
+        cout << "start check result ptr " << hex << result << dec << endl;
         mgpu::cudaMemcpy(h_ptr_1, result, N, cudaMemcpyDeviceToHost);
         for(int j = 0; j< N;j++) {
             if(h_ptr_1[j] != 0x03)
                 cout << "for task " << i << " result " << j << " is not 0x03 but " << hex << (int)h_ptr_1[j] << dec << endl;
         }
-        cout << hex << result << dec << endl;
     }
 }
 
