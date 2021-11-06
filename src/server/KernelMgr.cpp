@@ -36,8 +36,21 @@ void KernelMgr::init() {
     for (auto it = d.MemberBegin(); it != d.MemberEnd(); ++it) {
         string name = it->name.GetString();
         Value &v = it->value.GetObj();
-        kns[name] = Kernel{.property = v["property"].GetFloat(), .regs = v["register_per_thread"].GetInt(), .shms = v["share_mem_per_block"].GetInt()};
+        kns[name] = Kernel{
+                .property = 0.0,
+                .insts_per_warp = v["insts_per_warp"].GetDouble(),
+                .memTrans_per_warp = v["memTrans_per_warp"].GetDouble(),
+                .aveBytes_per_trans = v["aveBytes_per_trans"].GetDouble(),
+                .regs = v["register_per_thread"].GetInt(),
+                .shms = v["share_mem_per_block"].GetInt(),
+
+        };
+        kns[name].property = kns[name].memTrans_per_warp / kns[name].insts_per_warp;
     }
+}
+
+void KernelMgr::run() {
+    obverse();
 }
 
 void KernelMgr::obverse() {
@@ -47,6 +60,9 @@ void KernelMgr::obverse() {
         cout << "\t\tproperty: " << k.second.property << endl;
         cout << "\t\tregister per thread: " << k.second.regs << endl;
         cout << "\t\tshare mem per block: " << k.second.shms << endl;
+        cout << "\t\tinstructions executed per warp: " << k.second.insts_per_warp << endl;
+        cout << "\t\tmemory transactions per warp: " << k.second.memTrans_per_warp << endl;
+        cout << "\t\taverage byte counts per transaction: " << k.second.aveBytes_per_trans << endl;
     }
 }
 
@@ -61,7 +77,7 @@ int calMaxBlock(const Device::GPU *gpu, const Kernel &prop, dim3 &block) {
     return max_blocks;
 }
 
-KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) :finished(false) {
+KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : finished(false) {
     // name
     name = msg->kernel;
     if (KERNELMGR->kns.find(name) == KERNELMGR->kns.end()) {
@@ -121,7 +137,7 @@ void KernelInstance::sync() {
 }
 
 void KernelInstance::occupancy_all(stream_t ctrl) {
-    if((cpuConf[0] >> 16) != max_block_per_sm)
+    if ((cpuConf[0] >> 16) != max_block_per_sm)
         set_config(0, gpu->sms, max_block_per_sm, ctrl);
 }
 
@@ -138,8 +154,9 @@ void KernelInstance::get_runinfo(stream_t ctrl) {
 
 void KernelInstance::print_runinfo() {
     dout(LOG) << "Kernel name : " << name << dendl;
-    dout(LOG) << "assigned sm low: " << (cpuConf[0] & 0xff)  << " sm high: " << ((cpuConf[0] & 0xff00) >> 8) << " worker limit: " << (cpuConf[0] >> 16) << dendl;
-    for(int i = 0; i < gpu->sms; i++) {
+    dout(LOG) << "assigned sm low: " << (cpuConf[0] & 0xff) << " sm high: " << ((cpuConf[0] & 0xff00) >> 8)
+              << " worker limit: " << (cpuConf[0] >> 16) << dendl;
+    for (int i = 0; i < gpu->sms; i++) {
         dout(LOG) << "sm : " << i << " have worker: " << cpuConf[6 + i] << dendl;
     }
     dout(LOG) << "===================" << dendl;

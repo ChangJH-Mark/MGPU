@@ -274,7 +274,7 @@ void Conductor::do_multask(const std::shared_ptr<Command> &cmd) {
     mgpu::MulTaskRet res;
 
     for (int i = 0; i < msg->task_num; i++) {
-        int dev = i % dev_count;
+        int dev = DEVICES->GetBestDev(msg->task[i]);
         res.success[i] = false;
         auto ret = std::async(&singleTask, (msg->task + i), dev, res.success + i, res.bind_dev + i, res.msg[i]);
         result[i] = std::move(ret);
@@ -320,6 +320,7 @@ bool singleTask(Task *t, int dev, bool *success, int *bind_dev, char result[128]
     }
     launchKernel(t->ptx, t->kernel, t->conf, t->param, t->p_size, stream);
     COPYMESSAGE(cudaStreamSynchronize(stream));
+    DEVICES->ReleaseDev(dev, *t);
     *success = true;
     return *success;
 }

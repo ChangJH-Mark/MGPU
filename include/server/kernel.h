@@ -15,7 +15,10 @@
 namespace mgpu {
 
     typedef struct {
-        float property;
+        double property;
+        double insts_per_warp;
+        double memTrans_per_warp;
+        double aveBytes_per_trans;
         int regs;
         int shms;
     } Kernel;
@@ -32,7 +35,7 @@ namespace mgpu {
 
         void init() override;
 
-        void run() override {};
+        void run() override;
 
         void join() override {};
 
@@ -41,6 +44,16 @@ namespace mgpu {
         void obverse();
 
         ~KernelMgr() override {};
+
+    public:
+        const Kernel &GetKernel(const string &name) {
+            if(kns.find(name) == kns.end()) {
+                cout << "Kernel " << name << " has no configure data" << endl;
+                exit(EXIT_FAILURE);
+            }
+            return kns[name];
+        }
+
     private:
         std::unordered_map<std::string, Kernel> kns; // kernels
         friend class KernelInstance;
@@ -63,7 +76,8 @@ namespace mgpu {
         void launch();          // launch this Kernel
         void sync();            // sync this kernel
         void print_runinfo();
-        bool is_finished() {return finished;}        // indicate if Kernel Instance stopped
+
+        bool is_finished() { return finished; }        // indicate if Kernel Instance stopped
 
         void occupancy_all(stream_t ctrl);
 
@@ -73,7 +87,7 @@ namespace mgpu {
 
     private:
         bool finished;          // signal variable, if kernel finished
-        
+
         // parameter
         Kernel prop;
         std::string name;

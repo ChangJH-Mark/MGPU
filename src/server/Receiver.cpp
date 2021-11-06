@@ -83,7 +83,7 @@ void deinit_shm(pid_t cpid) {
     using std::string;
     string n = "/dev/shm/mgpu.0." + to_string(cpid);
     unlink(n.c_str());
-    n = "/dev/shm/mgpu.0." + to_string(cpid);
+    n = "/dev/shm/mgpu.1." + to_string(cpid);
     unlink(n.c_str());
 }
 

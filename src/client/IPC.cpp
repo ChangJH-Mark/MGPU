@@ -54,13 +54,11 @@ int IPCClient::init_shm() {
 int IPCClient::deinit_shm() {
     std::string names[2] = {"mgpu.0."+ std::to_string(pid), "mgpu.1."+std::to_string(pid)};
     int cnt = 0;
-    for(auto & n : names) {
-        if (0 != access(n.c_str(), F_OK)) {
-            munmap(cnt ? c_fut.shm_ptr : s_fut.shm_ptr, PAGE_SIZE);
-            shm_unlink(n.c_str());
-            cnt++;
-        }
-    }
+    munmap(c_fut.shm_ptr, PAGE_SIZE);
+    shm_unlink(names[0].c_str());
+
+    munmap(s_fut.shm_ptr, PAGE_SIZE);
+    shm_unlink(names[1].c_str());
     return 0;
 }
 
