@@ -18,8 +18,9 @@
 namespace mgpu {
     class Command {
     public:
-        Command(AbMsg *m, void * shm_ptr, ProxyWorker* worker) : type(m->type), fut(shm_ptr), msg(m), stream(m->stream), m_worker(worker),
-                                            status(std::make_shared<bool>(false)) {
+        Command(AbMsg *m, void *shm_ptr, ProxyWorker *worker) : type(m->type), fut(shm_ptr), msg(m), stream(m->stream),
+                                                                m_worker(worker),
+                                                                status(std::make_shared<bool>(false)) {
             id = id_cnt++;
             device = m->key & 0xffff;
             pid = m->key >> 16;
@@ -47,13 +48,15 @@ namespace mgpu {
 
         api_t get_type() const { return type; }
 
+        pid_t get_pid() const { return pid; }
+
         uint get_id() const { return id; }
 
         uint get_device() const { return device; }
 
         stream_t get_stream() const { return stream; }
 
-        ProxyWorker* get_worker() const {return m_worker;}
+        ProxyWorker *get_worker() const { return m_worker; }
 
         template<class T>
         T *get_msg() { return (T *) msg; }
@@ -91,7 +94,7 @@ namespace mgpu {
         fut.setData(&value, sizeof(T));
         fut.setState(READY);
         // client did not take data
-        if(fut.ready()) {
+        if (fut.ready()) {
             int res = syscall(__NR_futex, fut.shm_ptr, FUTEX_WAKE, 1, NULL);
             if (res == -1) {
                 printf("error to wake client, syscall return %d, errno is %d\n", res, errno);
@@ -106,7 +109,7 @@ namespace mgpu {
         fut.setData(ptr, sizeof(T) * num);
         fut.setState(READY);
         // client did not take data
-        if(fut.ready()) {
+        if (fut.ready()) {
             int res = syscall(__NR_futex, fut.shm_ptr, FUTEX_WAKE, 1, NULL);
             if (res == -1) {
                 printf("error to wake client, syscall return %d, errno is %d\n", res, errno);

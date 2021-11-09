@@ -50,7 +50,7 @@ void KernelMgr::init() {
 }
 
 void KernelMgr::run() {
-    obverse();
+//    obverse();
 }
 
 void KernelMgr::obverse() {

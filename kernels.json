@@ -1,0 +1,16 @@
+{
+	    "vectorAdd": {
+		    "insts_per_warp": 22.955357,
+		    "memTrans_per_warp": 7.975765, 
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 21,
+		    "share_mem_per_block": 20
+	    },
+	    "MatrixMulCUDA": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 32,
+		    "share_mem_per_block": 2068
+	    }
+}

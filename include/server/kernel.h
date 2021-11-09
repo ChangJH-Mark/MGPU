@@ -83,6 +83,8 @@ namespace mgpu {
 
         void set_config(int sm_low, int sm_high, int wlimit, stream_t ctrl);    // dynamic set resource configs
         int get_config();                                                       // get resource configs
+        stream_t get_stream() {return stream;}
+        std::string get_name() {return name;}
         void get_runinfo(stream_t ctrl);                                        // get kernel run time stage info
 
     private:

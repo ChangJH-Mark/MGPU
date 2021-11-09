@@ -133,7 +133,7 @@ void Device::init_gpu(GPU *gpu, uint id) {
 }
 
 void Device::run() {
-    observe();
+//    observe();
 }
 
 void Device::observe() {

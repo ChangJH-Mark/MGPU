@@ -149,7 +149,7 @@ void Conductor::do_cudamemcpy(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemcpyMsg>();
     //dout(DEBUG) << " copy from: " << msg->src << " to: " << msg->dst << dendl;
-    cudaCheck(::cudaMemcpy(msg->dst, msg->src, msg->count, msg->kind));
+    cudaCheck(cudaMemcpy(msg->dst, msg->src, msg->count, msg->kind));
     cmd->finish<bool>(true);
 }
 
