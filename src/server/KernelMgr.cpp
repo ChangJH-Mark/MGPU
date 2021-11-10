@@ -45,7 +45,7 @@ void KernelMgr::init() {
                 .shms = v["share_mem_per_block"].GetInt(),
 
         };
-        kns[name].property = kns[name].memTrans_per_warp / kns[name].insts_per_warp;
+        kns[name].property = kns[name].memTrans_per_warp / kns[name].insts_per_warp * kns[name].aveBytes_per_trans;
     }
 }
 

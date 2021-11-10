@@ -112,7 +112,7 @@ bool Scheduler::find_corun(KernelInstance *running, KernelInstance **candidate) 
     int r_warps = (r_thds + gpu->warp_size - 1) / gpu->warp_size, c_warps = 0;
     int r_regs = running->prop.regs * r_thds, c_regs = 0;
     int r_shms = running->prop.shms, c_shms = 0;
-    int r_prop = running->prop.property, c_prop = 0;
+    double r_prop = running->prop.property, c_prop = 0;
 
     for (auto c = pending.begin(); c != pending.end(); c++) {
         if(running->is_finished())
@@ -144,13 +144,15 @@ bool Scheduler::find_corun(KernelInstance *running, KernelInstance **candidate) 
             if (score <= low_bound || score >= high_bound)
                 continue;
 
-            // total_warps less than best_warps ever
-            if (total_warps < best_warps)
-                continue;
-            // total_warps equal best_warps ever, but get worse score
-            if (total_warps == best_warps &&
-                (abs(score - 2 * gpu->gmem_max_tp) >= abs(best_score - 2 * gpu->gmem_max_tp)))
-                continue;
+            if(best_warps != -1) {
+                // total_warps less than best_warps ever
+                if (total_warps < best_warps)
+                    continue;
+                // total_warps equal best_warps ever, but get worse score
+                if (total_warps == best_warps &&
+                    (abs(score - 2 * gpu->gmem_max_tp) >= abs(best_score - 2 * gpu->gmem_max_tp)))
+                    continue;
+            }
 
             // new best result
             best_warps = total_warps;

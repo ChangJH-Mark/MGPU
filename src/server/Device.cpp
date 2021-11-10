@@ -129,11 +129,11 @@ void Device::init_gpu(GPU *gpu, uint id) {
     gpu->warp_size = dev_prop.warpSize;
     gpu->max_warps = dev_prop.maxThreadsPerMultiProcessor / gpu->warp_size;
     gpu->gpu_clock = dev_prop.clockRate;
-    gpu->gmem_max_tp = 2.0 * (dev_prop.memoryClockRate * dev_prop.memoryBusWidth) / (8 * dev_prop.clockRate);
+    gpu->gmem_max_tp = 1.0 * (dev_prop.memoryClockRate * dev_prop.memoryBusWidth) / (8 * dev_prop.clockRate);
 }
 
 void Device::run() {
-//    observe();
+    observe();
 }
 
 void Device::observe() {
@@ -146,6 +146,7 @@ void Device::observe() {
         cout << "max warps per sm: " << iter->max_warps << endl;
         cout << "warp p_size : " << iter->warp_size << " threads" << endl;
         cout << "stream multiprocessor number : " << iter->sms << endl;
+        cout << "registers per sm: " << iter->regs << endl;
         cout << "share memory per sm(bytes) : " << iter->share_mem << endl;
         cout << "global_memory(MiB) : " << (iter->global_mem >> 10) << endl;
         cout << "const memory(MiB) : " << (iter->const_mem >> 10) << endl;
