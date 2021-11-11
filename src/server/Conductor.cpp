@@ -99,6 +99,7 @@ void Conductor::do_cudamallochost(const std::shared_ptr<Command> &cmd) {
             perror("fail to shmget");
             exit(1);
         }
+        cudaCheck(cudaHostRegister(host_ptr, msg->size, cudaHostRegisterDefault));
     }
     cmd->finish<CudaMallocHostRet>(mgpu::CudaMallocHostRet{host_ptr, shm_id});
     // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " finished "  << dendl;
@@ -124,6 +125,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
         MEMPOOL->cpuMemoryDeAlloc(host_ptr);
     } else {
         auto &shms_id = cmd->get_worker()->shms_id;
+        cudaCheck(cudaHostUnregister(host_ptr));
         if (0 > shmdt(host_ptr)) {
             perror("server fail to release share memory");
             exit(1);
