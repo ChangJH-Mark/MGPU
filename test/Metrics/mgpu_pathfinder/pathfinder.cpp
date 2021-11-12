@@ -116,7 +116,9 @@ int calc_path(int *gpuWall, int *gpuResult[2], int rows, int cols, \
     dim3 dimGrid(blockCols);
 
     int src = 1, dst = 0;
-    for (int t = 0; t < rows-1; t+=pyramid_height) {
+    int cnt = 0;
+    for (int t = 0; t < rows-1 && cnt < 3; t+=pyramid_height) {
+        cnt++;
         int temp = src;
         src = dst;
         dst = temp;
@@ -139,7 +141,7 @@ int main(int argc, char** argv)
 
     run(argc,argv);
     auto end = std::chrono::steady_clock::now();
-    printf("cost usec %ld \n", std::chrono::duration_cast<chrono::microseconds>(end - start).count());
+    printf( "cost usec %ld \n", std::chrono::duration_cast<chrono::microseconds>(end - start).count());
     return EXIT_SUCCESS;
 }
 

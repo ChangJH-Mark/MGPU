@@ -93,7 +93,7 @@ KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : finished(f
 
     // mod
     cudaCheck(cuModuleLoad(&mod, msg->ptx));
-    cudaCheck(cuModuleGetFunction(&func, mod, msg->kernel));
+//    cudaCheck(cuModuleGetFunction(&func, mod, msg->kernel));
     cudaCheck(cuModuleGetFunction(&func_v1, mod, (name + "_V1").c_str()));
     cudaCheck(cuModuleGetGlobal(&devConf, nullptr, mod, "configs"));
 

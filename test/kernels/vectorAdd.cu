@@ -51,6 +51,8 @@ vectorAdd_V1(const int *A, const int *B, int *C, int numElements) {
         SET_WID(flags, start_block);
     }
 
+    __syncthreads();
+
     while (start_block != -1) {
         if (IS_LEAD_THREAD) {
             start_block = SMS_FLAG;

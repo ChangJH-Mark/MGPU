@@ -270,7 +270,6 @@ void usage(int argc, char **argv)
 int main(int argc, char** argv)
 {
     auto start = std::chrono::steady_clock::now();
-    printf("WG size of kernel = %d X %d\n", BLOCK_SIZE, BLOCK_SIZE);
 
     run(argc,argv);
     auto end = std::chrono::steady_clock::now();

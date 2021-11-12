@@ -599,6 +599,6 @@ int main(int argc, char * argv[]) {
     mgpu::cudaFreeHost(seed);
     mgpu::cudaFreeHost(I);
     auto end = std::chrono::steady_clock::now();
-    printf("cost usec %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(end - sta).count());
+    fprintf(stderr,"cost usec %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(end - sta).count());
     return 0;
 }

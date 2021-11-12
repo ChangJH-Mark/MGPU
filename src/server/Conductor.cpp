@@ -185,8 +185,8 @@ void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
     SCHEDULER->apply_slot(&ki);
     ki.launch();
     ki.sync();
-    cmd->finish<bool>(true);
     SCHEDULER->release_slot(&ki);
+    cmd->finish<bool>(true);
 }
 
 //void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
@@ -216,8 +216,7 @@ void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
 
 void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
-    dout(DEBUG) << " synchronize stream: at device: " << cmd->get_device() << " stream: "
-                << cmd->get_stream() << dendl;
+//    dout(DEBUG) << " synchronize stream: at device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cudaCheck(::cudaStreamSynchronize(cmd->get_stream()));
     cmd->finish<bool>(true);
 }

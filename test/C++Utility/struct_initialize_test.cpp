@@ -18,7 +18,7 @@ int main() {
         sec = fork();
         if(sec == 0)
         {
-            system("hotspot 512 2 2 data/hotspot/temp_512 data/hotspot/power_512 mgpu_hotspot.txt");
+            system("hotspot 512 2 2 data/hotspot/temp_512 data/hotspot/power_512 hotspot.txt");
             chrono::steady_clock::time_point end = chrono::steady_clock::now();
             cout << " in process b " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms "<<endl;
             exit(0);

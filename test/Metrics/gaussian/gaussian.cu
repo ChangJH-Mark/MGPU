@@ -93,7 +93,6 @@ create_matrix(float *m, int size){
 int main(int argc, char *argv[])
 {
     auto start = std::chrono::steady_clock::now();
-    printf("WG size of kernel 1 = %d, WG size of kernel 2= %d X %d\n", MAXBLOCKSIZE, BLOCK_SIZE_XY, BLOCK_SIZE_XY);
     int verbose = 1;
     int i, j;
     char flag;
@@ -196,7 +195,7 @@ int main(int argc, char *argv[])
     free(a);
     free(b);
     auto end = std::chrono::steady_clock::now();
-    printf("cost usec %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+    fprintf(stderr, "cost usec %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 }
 /*------------------------------------------------------
  ** PrintDeviceProperties

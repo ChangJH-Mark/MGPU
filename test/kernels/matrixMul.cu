@@ -117,6 +117,8 @@ extern "C" __global__ void MatrixMulCUDA_V1(float *C, float *A,
         SET_WID(flags, start_block);
     }
 
+    __syncthreads();
+
     while (start_block != -1) {
         if (IS_LEAD_THREAD) {
             start_block = SMS_FLAG;
