@@ -180,7 +180,7 @@ launchKernel(const string &ptx, const string &kname, LaunchConf conf, void *para
 }
 
 void Conductor::do_cudalaunchkernel(const std::shared_ptr<Command> &cmd) {
-    KernelInstance ki(cmd->get_msg<CudaLaunchKernelMsg>(), cmd->get_device());
+    KernelInstance ki(cmd->get_msg<CudaLaunchKernelMsg>(), cmd->get_device(), cmd->get_worker());
     ki.init();
     SCHEDULER->apply_slot(&ki);
     ki.launch();

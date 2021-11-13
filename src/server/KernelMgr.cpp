@@ -77,7 +77,7 @@ int calMaxBlock(const Device::GPU *gpu, const Kernel &prop, dim3 &block) {
     return max_blocks;
 }
 
-KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : finished(false) {
+KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid, ProxyWorker* worker) : finished(false) {
     // name
     name = msg->kernel;
     if (KERNELMGR->kns.find(name) == KERNELMGR->kns.end()) {
@@ -91,12 +91,6 @@ KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : finished(f
     grid = msg->conf.grid;
     stream = msg->conf.stream;
 
-    // mod
-    cudaCheck(cuModuleLoad(&mod, msg->ptx));
-//    cudaCheck(cuModuleGetFunction(&func, mod, msg->kernel));
-    cudaCheck(cuModuleGetFunction(&func_v1, mod, (name + "_V1").c_str()));
-    cudaCheck(cuModuleGetGlobal(&devConf, nullptr, mod, "configs"));
-
     // parameter
     memcpy(param_buf, msg->param, msg->p_size);
     p_size = msg->p_size;
@@ -104,8 +98,10 @@ KernelInstance::KernelInstance(CudaLaunchKernelMsg *msg, int gpuid) : finished(f
     // cpu conf
     gpu = DEVICES->getDev(gpuid);
     cbytes = sizeof(int) * (6 + gpu->sms);
-    cpuConf = new int[cbytes];
     max_block_per_sm = calMaxBlock(gpu, prop, block);
+
+    // mod
+    worker->get_funcs(msg->ptx, (name + "_V1"), func_v1, devConf, cpuConf, cbytes);
 }
 
 void KernelInstance::init() {
@@ -167,6 +163,4 @@ int KernelInstance::get_config() {
 }
 
 KernelInstance::~KernelInstance() {
-    cudaCheck(cuModuleUnload(mod));
-    delete[] cpuConf;
 }

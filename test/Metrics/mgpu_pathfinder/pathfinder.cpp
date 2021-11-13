@@ -116,9 +116,7 @@ int calc_path(int *gpuWall, int *gpuResult[2], int rows, int cols, \
     dim3 dimGrid(blockCols);
 
     int src = 1, dst = 0;
-    int cnt = 0;
-    for (int t = 0; t < rows-1 && cnt < 3; t+=pyramid_height) {
-        cnt++;
+    for (int t = 0; t < rows-1; t+=pyramid_height) {
         int temp = src;
         src = dst;
         dst = temp;

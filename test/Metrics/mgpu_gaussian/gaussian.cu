@@ -127,6 +127,8 @@ extern "C" __global__ void Fan2_V1(float *m_cuda, float *a_cuda, float *b_cuda, 
         SET_WID(flags, start_block);
     }
 
+    __syncthreads();
+
     while (start_block != -1) {
         if (IS_LEAD_THREAD) {
             start_block = SMS_FLAG;

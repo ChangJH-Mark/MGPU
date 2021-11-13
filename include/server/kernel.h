@@ -61,7 +61,7 @@ namespace mgpu {
 
     class KernelInstance {
     public:
-        explicit KernelInstance(CudaLaunchKernelMsg *msg, int gpuid);
+        explicit KernelInstance(CudaLaunchKernelMsg *msg, int gpuid, ProxyWorker* worker);
 
         KernelInstance() = delete;
 

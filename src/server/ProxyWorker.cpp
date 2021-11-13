@@ -6,6 +6,7 @@
 #include "server/conductor.h"
 #include "server/server.h"
 #include "server/commands.h"
+#include "common/helper.h"
 #include <string.h>
 #include <memory>
 #include <linux/futex.h>
@@ -41,4 +42,23 @@ void ProxyWorker::work() {
         auto cmd = std::make_shared<Command>((AbMsg *) buf, s_fut.shm_ptr, this);
         CONDUCTOR->conduct(cmd);
     }
+}
+
+void ProxyWorker::get_funcs(const std::string& ptx_name, const std::string &kname, CUfunction& func, CUdeviceptr& devPtr, int * & cpuConf, int cbytes) {
+    if(mods.find(ptx_name) == mods.end()) {
+        KernelMod *mod = new KernelMod;
+        mod->cpuConf = new int[cbytes];
+        cudaCheck(cuModuleLoad(&mod->mod, ptx_name.c_str()));
+        cudaCheck(cuModuleGetGlobal(&mod->devPtr, nullptr, mod->mod, "configs"));
+        mod->cpuConf = new int[cbytes];
+        cudaCheck(cuModuleGetFunction(&mod->funcs[kname], mod->mod, kname.c_str()));
+        mods[ptx_name] = mod;
+    }
+    auto module = mods[ptx_name];
+    cpuConf = module->cpuConf;
+    devPtr = module->devPtr;
+    if(module->funcs.find(kname) == module->funcs.end()) {
+        cudaCheck(cuModuleGetFunction(&module->funcs[kname], module->mod, kname.c_str()));
+    }
+    func = module->funcs[kname];
 }
