@@ -5,8 +5,8 @@
 #ifndef FASTGPU_MEMORY_POOL_H
 #define FASTGPU_MEMORY_POOL_H
 
-#include "/home/mark/Codes/final_graduation/src/cump/include/interface/gpu_memory_pool.hpp"
-#include "/home/mark/Codes/final_graduation/include/cump/cump.hpp"
+#include "../../third-party/streaming_processing_cuda/include/cump/final_graduation/src/cump/include/interface/gpu_memory_pool.hpp"
+#include "../../third-party/streaming_processing_cuda/include/cump/final_graduation/include/cump/cump.hpp"
 #include "mod.h"
 #include <cuda_runtime.h>
 #include <map>

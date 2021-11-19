@@ -1,3 +1,6 @@
 [submodule "third-party/RapidJSON"]
 	path = third-party/RapidJSON
 	url = git@gitee.com:Tencent/RapidJSON.git
+[submodule "third-party/streaming_processing_cuda"]
+	path = third-party/streaming_processing_cuda
+	url = git@gitee.com:chang_jiahui/streaming_processing_cuda.git
