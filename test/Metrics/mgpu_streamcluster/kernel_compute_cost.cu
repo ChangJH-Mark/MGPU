@@ -7,7 +7,7 @@
 #define SMID_MASK 0xff
 #define ITERS_MASK 0xff00
 #define WORKER_MASK 0xff0000
-#define ITERS 10
+#define ITERS 5
 #define MAX_SM 6
 #define GET_SID(flags) (flags & SMID_MASK)
 #define GET_WID(flags) (( flags & WORKER_MASK) >> 16)

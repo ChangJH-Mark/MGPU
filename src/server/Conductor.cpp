@@ -140,7 +140,7 @@ void Conductor::do_cudafreehost(const std::shared_ptr<Command> &cmd) {
 }
 
 void Conductor::do_cudamemset(const std::shared_ptr<Command> &cmd) {
-    dout(DEBUG) << " set address: " << cmd->get_msg<CudaMemsetMsg>()->devPtr << dendl;
+    // dout(DEBUG) << " set address: " << cmd->get_msg<CudaMemsetMsg>()->devPtr << dendl;
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaMemsetMsg>();
     cudaCheck(::cudaMemset(msg->devPtr, msg->value, msg->count));
@@ -208,7 +208,7 @@ void Conductor::do_mocklaunchkernel(const std::shared_ptr<Command> &cmd) {
 
 void Conductor::do_cudastreamcreate(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
-    dout(DEBUG) << " cmd_id: " << cmd->get_id() << " create stream at device: " << cmd->get_device() << dendl;
+    // dout(DEBUG) << " cmd_id: " << cmd->get_id() << " create stream at device: " << cmd->get_device() << dendl;
     cudaStream_t ret;
     cudaCheck(cudaStreamCreate(&ret));
     cmd->finish<stream_t>(ret);
@@ -222,7 +222,7 @@ void Conductor::do_cudastreamsynchronize(const std::shared_ptr<Command> &cmd) {
 }
 
 void Conductor::do_cudagetdevicecount(const std::shared_ptr<Command> &cmd) {
-    dout(DEBUG) << " cuda get device count " << dendl;
+    // dout(DEBUG) << " cuda get device count " << dendl;
     int count;
     cudaCheck(::cudaGetDeviceCount(&count));
     cmd->finish<int>(count);
@@ -230,21 +230,21 @@ void Conductor::do_cudagetdevicecount(const std::shared_ptr<Command> &cmd) {
 
 void Conductor::do_cudaeventcreate(const std::shared_ptr<Command> &cmd) {
     cudaEvent_t event;
-    dout(DEBUG) << " create event at device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
+    // dout(DEBUG) << " create event at device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cudaCheck(::cudaEventCreate(&event));
     cmd->finish<cudaEvent_t>(event);
 }
 
 void Conductor::do_cudaeventdestroy(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaEventDestroy(cmd->get_msg<CudaEventDestroyMsg>()->event));
-    dout(DEBUG) << " event destroy device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
+    // dout(DEBUG) << " event destroy device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cmd->finish<bool>(true);
 }
 
 void Conductor::do_cudaeventrecord(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaEventRecordMsg>();
-    dout(DEBUG) << " device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
+    // dout(DEBUG) << " device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cudaCheck(::cudaEventRecord(msg->event, msg->stream));
     cmd->finish<bool>(true);
 }
@@ -260,9 +260,9 @@ void Conductor::do_cudaeventelapsedtime(const std::shared_ptr<Command> &cmd) {
     cudaCheck(::cudaSetDevice(cmd->get_device()));
     auto msg = cmd->get_msg<CudaEventElapsedTimeMsg>();
     float ret;
-    dout(DEBUG) << " start device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
+    // dout(DEBUG) << " start device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cudaCheck(::cudaEventElapsedTime(&ret, msg->start, msg->end));
-    dout(DEBUG) << " end device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
+    // dout(DEBUG) << " end device: " << cmd->get_device() << " stream: " << cmd->get_stream() << dendl;
     cmd->finish(ret);
 }
 
