@@ -20,13 +20,13 @@ namespace mgpu {
             uint ID;
             uint sms;
             uint regs;
-            uint share_mem;
-            uint global_mem;
-            uint const_mem;
+            uint share_mem;                     // bytes
+            unsigned long long global_mem;      // bytes
+            uint const_mem;                     // bytes
             uint max_blocks;
             uint max_warps;
             uint warp_size;
-            uint gpu_clock;
+            uint gpu_clock;                     // KHz
             double gmem_max_tp; /* max bytes read / write per gpu clock */
         } GPU;
 
@@ -60,9 +60,9 @@ namespace mgpu {
 
     private:
         typedef struct {
-            uint copy2dev;      // pending copy to dev bytes
-            uint insts;         // pending instructions to execute
-            uint memCycles;      // pending memory cycle costs
+            uint copy2dev = 0;      // pending copy to dev bytes
+            uint insts = 0;         // pending instructions to execute
+            uint memCycles = 0;      // pending memory cycle costs
             std::mutex spin;
         } Load;
 

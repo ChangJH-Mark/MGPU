@@ -23,3 +23,5 @@ add_subdirectory(src)
 add_subdirectory(test)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include
         DESTINATION ${OUTPUT_ROOT})
+install(FILES ${PROJECT_SOURCE_DIR}/kernels.json
+        DESTINATION ${OUTPUT_ROOT})

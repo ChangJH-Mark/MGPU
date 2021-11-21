@@ -149,9 +149,9 @@ void test_multiGPU() {
 }
 
 int main() {
-    test_vectorAdd();
-    test_matrixMul();
-//    test_multiGPU();
+//    test_vectorAdd();
+//    test_matrixMul();
+    test_multiGPU();
 //    test_multiGPUmatrixMul();
     //test_sm();
     return 0;

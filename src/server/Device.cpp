@@ -90,18 +90,16 @@ int Device::GetBestDev(const mgpu::Task &t) {
         }
         gpu_load[dev]->spin.unlock();
     }
+    while(!gpu_load[res]->spin.try_lock());
     gpu_load[res]->copy2dev += copy2dev;
     gpu_load[res]->insts += warps * k.insts_per_warp;
     gpu_load[res]->memCycles +=
             (warps * k.memTrans_per_warp * k.aveBytes_per_trans * 1.0) / (gpu_list[res]->gmem_max_tp * 1000.0);
+    gpu_load[res]->spin.unlock();
     return res;
 }
 
 void Device::ReleaseDev(int dev, const mgpu::Task &t) {
-    while (!gpu_load[dev]->spin.try_lock());
-    auto load = gpu_load[dev];
-    auto gpu = gpu_list[dev];
-
     auto k = KERNELMGR->GetKernel(t.kernel);
     uint warps = (t.conf.block.x * t.conf.block.y * t.conf.block.z + 31) / 32 * t.conf.grid.x * t.conf.grid.y *
                  t.conf.grid.z;
@@ -109,6 +107,9 @@ void Device::ReleaseDev(int dev, const mgpu::Task &t) {
     uint copy2dev = 0;
     for (int i = 0; i < t.hdn; i++)
         copy2dev += t.hds[i];
+    while (!gpu_load[dev]->spin.try_lock());
+    auto load = gpu_load[dev];
+    auto gpu = gpu_list[dev];
 
     load->copy2dev -= copy2dev;
     load->insts -= warps * k.insts_per_warp;
@@ -129,7 +130,7 @@ void Device::init_gpu(GPU *gpu, uint id) {
     gpu->warp_size = dev_prop.warpSize;
     gpu->max_warps = dev_prop.maxThreadsPerMultiProcessor / gpu->warp_size;
     gpu->gpu_clock = dev_prop.clockRate;
-    gpu->gmem_max_tp = 1.0 * (dev_prop.memoryClockRate * dev_prop.memoryBusWidth) / (8 * dev_prop.clockRate);
+    gpu->gmem_max_tp = (1.0 * dev_prop.memoryClockRate * dev_prop.memoryBusWidth) / (8.0 * dev_prop.clockRate);
 }
 
 void Device::run() {

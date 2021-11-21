@@ -12,5 +12,47 @@
 		    "aveBytes_per_trans": 32,
 		    "register_per_thread": 32,
 		    "share_mem_per_block": 2068
+	    },
+	    "calculate_temp": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 32,
+		    "share_mem_per_block": 2068
+	    },
+	    "dynproc_kernel": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 26,
+		    "share_mem_per_block": 2020
+	    },
+	    "kernel": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 26,
+		    "share_mem_per_block": 2020
+	    },
+	    "kernel_compute_cost": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 26,
+		    "share_mem_per_block": 2020
+	    },
+	    "Fan1": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 26,
+		    "share_mem_per_block": 2020
+	    },
+	    "Fan2": {
+		    "insts_per_warp": 966,
+		    "memTrans_per_warp": 15.44203125,
+		    "aveBytes_per_trans": 32,
+		    "register_per_thread": 26,
+		    "share_mem_per_block": 2020
 	    }
 }
