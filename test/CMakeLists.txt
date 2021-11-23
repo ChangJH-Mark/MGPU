@@ -1,6 +1,6 @@
 add_subdirectory(client)
 add_subdirectory(Utilities)
 add_subdirectory(C++Utility)
-set(GENERAL_PTX_FLAG --default-stream per-thread --ptxas-options=-v -dlink -cubin -gencode arch=compute_61,code=sm_61 -odir=${OUTPUT_ROOT}/ptx)
+set(GENERAL_PTX_FLAG --default-stream per-thread -DMAX_SM=${MAX_SM} -dlink -cubin -gencode arch=compute_${GPU_CC},code=sm_${GPU_CC} -odir=${OUTPUT_ROOT}/ptx)
 add_subdirectory(Metrics)
 add_subdirectory(kernels)

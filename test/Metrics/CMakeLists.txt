@@ -20,9 +20,9 @@ if(${BUILD_TEST})
     target_link_libraries(particlefilter_naive m cuda)
 
     target_compile_options(particlefilter_float BEFORE
-            PRIVATE -g -O3 -use_fast_math -arch sm_50)
+            PRIVATE -g -O3 -use_fast_math -arch sm_${GPU_CC})
     target_compile_options(particlefilter_naive BEFORE
-            PRIVATE -g -O3 -use_fast_math -arch sm_50)
+            PRIVATE -g -O3 -use_fast_math -arch sm_${GPU_CC})
 
     # install executable, scripts, test data
     # executable
